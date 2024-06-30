@@ -99,7 +99,7 @@ def train_loop(model: torch.nn.Module,
     best_test_loss= float('inf')
     epochs_without_imporvement = 0 
         
-    for i in epochs:    
+    for i in range(epochs):    
             
         train_loss = train_step(model , train_data , loss_fn , optimizer , device )
         test_loss = test_step(model , test_data , loss_fn , optimizer , device)

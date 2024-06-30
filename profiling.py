@@ -1,10 +1,8 @@
 import torch 
-import numpy as np 
 from torch import nn 
-import torch.utils
 import torch.utils.checkpoint
 from torch.utils.data import DataLoader
-import torch.utils.data
+from torch.profiler import profile, record_function, ProfilerActivity
 import torchvision.transforms.v2 as transforms
 import torch.cuda.amp as amp
 import tqdm
@@ -92,17 +90,17 @@ def train_loop(model: torch.nn.Module,
                device: torch.device = "cuda" ,
                epochs : int = 10,
                early_stopping = False,
-               patience = 10):
+               patience = 10, lr_scheduler: torch.optim.lr_scheduler= None):
     train_loss_acc = []
     test_loss_acc= []
     
     best_test_loss= float('inf')
     epochs_without_imporvement = 0 
         
-    for i in epochs:    
+    for i in range(epochs):    
             
-        train_loss = train_step(model , train_data , loss_fn , optimizer , device )
-        test_loss = test_step(model , test_data , loss_fn , optimizer , device)
+        train_loss = train_step(model , train_data , loss_fn , optimizer , device ,lr_scheduler  )
+        test_loss = test_step(model , test_data , loss_fn  , device)
 
         if early_stopping:
 
@@ -130,8 +128,9 @@ def initialize_weights(m):
             nn.init.constant_(m.bias, 0) 
 
 if __name__ == '__main__':
+    
     torch.backends.cudnn.benchmark = True
-    rng = np.random.default_rng()
+    
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     model = Model().to(device)
@@ -146,17 +145,24 @@ if __name__ == '__main__':
             transforms.Resize(size=config.IMAGE_SIZE ),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
-    pair_data_train =Pair_Data_Loader( root=config.TRAIN_DATASET , transform = data_transform )
     
+    pair_data_train =Pair_Data_Loader( root=config.TRAIN_DATASET , transform = data_transform )
     pair_dataloader_train  = DataLoader(pair_data_train, batch_size=128, shuffle=False, num_workers=2 , pin_memory=True)
-
+    
     pair_data_test =Pair_Data_Loader( root=config.TEST_DATASET, transform=data_transform )
     pair_dataloader_test = DataLoader(pair_data_test, batch_size=128, shuffle=False, num_workers=2 , pin_memory=True   )
     
     loss_function = nn.BCEWithLogitsLoss(reduction = "sum" )
     
     model.apply(initialize_weights)
-
-    train_loss , test_loss = train_loop(model, pair_dataloader_train , pair_dataloader_test, loss_function, optimizer, early_stopping= True, patience = 5,  device = device, epochs= 5 , )
     
-    print(f'Final train loss: {train_loss} , Final test loss: {test_loss}')
+
+
+    # starting profiling 
+    with profile ( activities=[ProfilerActivity.CUDA , ProfilerActivity.CPU],record_shapes= True ) as prof : 
+        with record_function("training"):
+            train_loss , test_loss = train_loop(model, pair_dataloader_train , pair_dataloader_test, loss_function, optimizer, early_stopping= True, patience = 5, device = device, epochs= 1)
+            
+    print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10))
+    
+    prof.export_chrome_trace("trace.json")
