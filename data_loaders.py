@@ -13,6 +13,7 @@ class Pair_Data_Loader(datasets.ImageFolder) :
             self.targets= [self.targets[i] for i in indices]
         self.n_pairs= len(self.samples)
         self.train_pairs= self.gen_example()
+
     def __len__(self): 
         return (len(self.targets))
 
@@ -36,13 +37,19 @@ class Pair_Data_Loader(datasets.ImageFolder) :
         self.train_pairs = pairs
     
     def __getitem__(self, idx):
-        t = self.train_pairs[idx]        
-        path_pos, _ = self.samples[t[0]]
-        path_neg, _ = self.samples[t[1]]
-        img_pos = self.loader(path_pos)
-        img_neg = self.loader(path_neg)
-        if self.transform is not None:
-            img_pos = self.transform(img_pos)
-            img_neg = self.transform(img_neg)
+        
+        t = self.train_pairs[idx]
+        
+        pth1 ,_= self.samples[t[0]]
+        pth2 ,_= self.samples[t[1]]
+        
+        img1 = self.loader(pth1)
+        img2 = self.loader(pth2)
+
+        if self.transforms is not None :
+            img1 = self.transform(img1)
+            img2 = self.transform(img2)
+
         target = torch.tensor(t[2] , dtype = torch.float32 )
-        return img_pos , img_neg , target
+        
+        return img1, img2, target

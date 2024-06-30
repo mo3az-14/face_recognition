@@ -146,17 +146,15 @@ if __name__ == '__main__':
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
     
-    pair_data_train =Pair_Data_Loader( root=config.TRAIN_DATASET , transform = data_transform )
-    pair_dataloader_train  = DataLoader(pair_data_train, batch_size=128, shuffle=False, num_workers=2 , pin_memory=True)
+    pair_data_train =Pair_Data_Loader( root=config.TRAIN_DATASET, transform = data_transform, indices=range(10) )
+    pair_dataloader_train  = DataLoader(pair_data_train, batch_size=128, shuffle=False, num_workers=2 , pin_memory=True )
     
-    pair_data_test =Pair_Data_Loader( root=config.TEST_DATASET, transform=data_transform )
-    pair_dataloader_test = DataLoader(pair_data_test, batch_size=128, shuffle=False, num_workers=2 , pin_memory=True   )
+    pair_data_test =Pair_Data_Loader( root=config.TEST_DATASET, transform=data_transform, indices= range(10) )
+    pair_dataloader_test = DataLoader( pair_data_test, batch_size=128, shuffle=False, num_workers=2, pin_memory=True )
     
     loss_function = nn.BCEWithLogitsLoss(reduction = "sum" )
     
     model.apply(initialize_weights)
-    
-
 
     # starting profiling 
     with profile ( activities=[ProfilerActivity.CUDA , ProfilerActivity.CPU],record_shapes= True ) as prof : 

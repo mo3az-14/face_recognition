@@ -102,7 +102,7 @@ def train_loop(model: torch.nn.Module,
     for i in range(epochs):    
             
         train_loss = train_step(model , train_data , loss_fn , optimizer , device )
-        test_loss = test_step(model , test_data , loss_fn , optimizer , device)
+        test_loss = test_step(model , test_data , loss_fn , device)
 
         if early_stopping:
 
@@ -117,7 +117,8 @@ def train_loop(model: torch.nn.Module,
                 print ("early stopping activated ")
                 break
 
-             
+        train_loss_acc.append(train_loss)
+        test_loss_acc.append(test_loss)
         print(f"train loss: {train_loss:.4f} test loss: {test_loss:.4f}@ epoch {i}")
 
     # model.load_state_dict(best_model_wts)
@@ -136,7 +137,7 @@ if __name__ == '__main__':
 
     model = Model().to(device)
         
-    optimizer = torch.optim.Adam(params=model.parameters(), lr=0.001 , weight_decay= 0.01)
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=0.001 , weight_decay= 0.5)
 
     scheduler = StepLR(optimizer, step_size= 1 , gamma = 0.99)
 
@@ -146,17 +147,19 @@ if __name__ == '__main__':
             transforms.Resize(size=config.IMAGE_SIZE ),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
-    pair_data_train =Pair_Data_Loader( root=config.TRAIN_DATASET , transform = data_transform )
     
+    pair_data_train = Pair_Data_Loader( root=config.TRAIN_DATASET , transform = data_transform )
     pair_dataloader_train  = DataLoader(pair_data_train, batch_size=128, shuffle=False, num_workers=2 , pin_memory=True)
 
-    pair_data_test =Pair_Data_Loader( root=config.TEST_DATASET, transform=data_transform )
-    pair_dataloader_test = DataLoader(pair_data_test, batch_size=128, shuffle=False, num_workers=2 , pin_memory=True   )
+    pair_data_test = Pair_Data_Loader( root=config.TEST_DATASET, transform=data_transform )
+    pair_dataloader_test = DataLoader(pair_data_test, batch_size=128, shuffle=False, num_workers=2 , pin_memory=True )
     
     loss_function = nn.BCEWithLogitsLoss(reduction = "sum" )
     
     model.apply(initialize_weights)
 
-    train_loss , test_loss = train_loop(model, pair_dataloader_train , pair_dataloader_test, loss_function, optimizer, early_stopping= True, patience = 5,  device = device, epochs= 5 , )
+    train_loss , test_loss = train_loop(model, pair_dataloader_train , pair_dataloader_test, 
+                                        loss_function, optimizer, early_stopping= True, patience = 5,  
+                                        device = device, epochs= 5 , )
     
     print(f'Final train loss: {train_loss} , Final test loss: {test_loss}')
