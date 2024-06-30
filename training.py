@@ -131,8 +131,11 @@ def initialize_weights(m):
             nn.init.constant_(m.bias, 0) 
 
 if __name__ == '__main__':
+    
     torch.backends.cudnn.benchmark = True
+    
     rng = np.random.default_rng()
+    
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     model = Model().to(device)
