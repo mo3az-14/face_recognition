@@ -13,7 +13,9 @@ import config
 from data_loaders import Pair_Data_Loader
 from model import Model
 import copy 
+import argparse 
 
+# training
 def train_step(model: torch.nn.Module,
                train_data:torch.utils.data.DataLoader ,
                loss_fn:torch.nn,
@@ -36,6 +38,7 @@ def train_step(model: torch.nn.Module,
         first , second , target = first.to(device , non_blocking=  True) , second.to(device , non_blocking=  True) , target.to(device , non_blocking=  True)
 
         if  mixed_precision_on : 
+            print("mixed precision on")
             with amp.autocast():
                 output = model(first , second).squeeze() 
                 loss = loss_fn (output , target)
@@ -61,7 +64,7 @@ def train_step(model: torch.nn.Module,
     
     return train_loss
     
-    
+# testing
 def test_step(model: torch.nn.Module,
                test_data:torch.utils.data.DataLoader ,
                loss_fn : torch.nn,
@@ -83,16 +86,17 @@ def test_step(model: torch.nn.Module,
 
     return test_loss
 
-
+# training loop 
 def train_loop(model: torch.nn.Module,
-               train_data ,
-               test_data,
-               loss_fn,
-               optimizer,
-               device: torch.device = "cuda" ,
+               train_data:torch.utils.data.DataLoader ,
+               test_data:torch.utils.data.DataLoader ,
+               loss_fn:torch.nn,
+               optimizer:torch.optim ,
+               device: str = "cuda" ,
                epochs : int = 10,
-               early_stopping = False,
-               patience = 10 , lr_scheduler = None):
+               early_stopping:bool = False,
+               patience:int = 10 , 
+               lr_scheduler:bool = None):
     train_loss_acc = []
     test_loss_acc= []
     
@@ -105,7 +109,6 @@ def train_loop(model: torch.nn.Module,
         test_loss = test_step(model , test_data , loss_fn , device)
 
         if early_stopping:
-
             if train_loss < best_loss : 
                 best_loss = train_loss 
                 epochs_without_imporvement = 0 
@@ -157,7 +160,7 @@ if __name__ == '__main__':
     pair_data_test = Pair_Data_Loader( root=config.TEST_DATASET, transform=data_transform )
     pair_dataloader_test = DataLoader(pair_data_test, batch_size=128, shuffle=False, num_workers=2 , pin_memory=True )
     
-    loss_function = nn.BCEWithLogitsLoss(reduction = "sum" )
+    loss_function = nn.BCEWithLogitsLoss(reduction = "mean" )
     
     model.apply(initialize_weights)
 

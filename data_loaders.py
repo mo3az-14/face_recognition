@@ -2,7 +2,7 @@ import torch
 import numpy as np 
 
 rng = np.random.default_rng()
-
+ 
 from torchvision import datasets
 
 class Pair_Data_Loader(datasets.ImageFolder) :
