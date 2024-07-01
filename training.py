@@ -12,6 +12,7 @@ from torch.optim.lr_scheduler import StepLR
 import config
 from data_loaders import Pair_Data_Loader
 from model import Model
+import copy 
 
 def train_step(model: torch.nn.Module,
                train_data:torch.utils.data.DataLoader ,
@@ -96,7 +97,7 @@ def train_loop(model: torch.nn.Module,
     train_loss_acc = []
     test_loss_acc= []
     
-    best_test_loss= float('inf')
+    best_loss= float('inf')
     epochs_without_imporvement = 0 
         
     for i in range(epochs):    
@@ -106,10 +107,10 @@ def train_loop(model: torch.nn.Module,
 
         if early_stopping:
 
-            if test_loss < best_test_loss : 
-                best_test_loss = test_loss
+            if train_loss < best_loss : 
+                best_loss = train_loss 
                 epochs_without_imporvement = 0 
-                # best_model_wts = copy.deepcopy(model.state_dict())
+                best_model_wts = copy.deepcopy(model.state_dict())
             else: 
                 epochs_without_imporvement +=1
 
@@ -121,7 +122,7 @@ def train_loop(model: torch.nn.Module,
         test_loss_acc.append(test_loss)
         print(f"train loss: {train_loss:.4f} test loss: {test_loss:.4f}@ epoch {i}")
 
-    # model.load_state_dict(best_model_wts)
+    model.load_state_dict(best_model_wts)
     return train_loss_acc , test_loss_acc
 
 def initialize_weights(m):
