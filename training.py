@@ -53,7 +53,6 @@ def train_step(model: torch.nn.Module,
             loss.backward()
             
             optimizer.step()
-            
 
         if lr_scheduler is not None:
             lr_scheduler.step()            
@@ -93,7 +92,7 @@ def train_loop(model: torch.nn.Module,
                device: torch.device = "cuda" ,
                epochs : int = 10,
                early_stopping = False,
-               patience = 10):
+               patience = 10 , lr_scheduler = None):
     train_loss_acc = []
     test_loss_acc= []
     
@@ -102,7 +101,7 @@ def train_loop(model: torch.nn.Module,
         
     for i in range(epochs):    
             
-        train_loss = train_step(model , train_data , loss_fn , optimizer , device )
+        train_loss = train_step(model , train_data , loss_fn= loss_fn ,optimizer= optimizer ,lr_scheduler=  lr_scheduler , device = device )
         test_loss = test_step(model , test_data , loss_fn , device)
 
         if early_stopping:
@@ -141,9 +140,9 @@ if __name__ == '__main__':
 
     model = Model().to(device)
         
-    optimizer = torch.optim.Adam(params=model.parameters(), lr=0.001 , weight_decay= 0.5)
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=0.001 , weight_decay= 0.01)
 
-    scheduler = StepLR(optimizer, step_size= 1 , gamma = 0.99)
+    scheduler = StepLR(optimizer, step_size= 1 , gamma = 0.999)
 
     data_transform= data_transform = transforms.Compose([
             transforms.ToImage(),
@@ -164,6 +163,6 @@ if __name__ == '__main__':
 
     train_loss , test_loss = train_loop(model, pair_dataloader_train , pair_dataloader_test, 
                                         loss_function, optimizer, early_stopping= True, patience = 5,  
-                                        device = device, epochs= 5 , )
+                                        device = device, epochs= 5 , lr_scheduler = scheduler )
     
     print(f'Final train loss: {train_loss} , Final test loss: {test_loss}')
