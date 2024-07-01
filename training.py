@@ -13,7 +13,7 @@ import config
 from data_loaders import Pair_Data_Loader
 from model import Model
 import copy 
-import argparse 
+from arguments import get_arguments
 
 # training
 def train_step(model: torch.nn.Module,
@@ -21,11 +21,9 @@ def train_step(model: torch.nn.Module,
                loss_fn:torch.nn,
                optimizer:torch.optim,
                mixed_precision_on : bool = True,
-               lr_scheduler: torch.optim.lr_scheduler = None,
                device: str = "cuda"):
     
     model.train()    
-    scaler = amp.GradScaler()
     train_loss:float = 0.0
     
     for  (first , second , target ) in tqdm.tqdm(train_data):
@@ -38,7 +36,8 @@ def train_step(model: torch.nn.Module,
         first , second , target = first.to(device , non_blocking=  True) , second.to(device , non_blocking=  True) , target.to(device , non_blocking=  True)
 
         if  mixed_precision_on : 
-            print("mixed precision on")
+            
+            scaler = amp.GradScaler()
             with amp.autocast():
                 output = model(first , second).squeeze() 
                 loss = loss_fn (output , target)
@@ -57,30 +56,33 @@ def train_step(model: torch.nn.Module,
             
             optimizer.step()
 
-        if lr_scheduler is not None:
-            lr_scheduler.step()            
-        
         train_loss+= loss.item()
-    
+          
     return train_loss
     
 # testing
-def test_step(model: torch.nn.Module,
+def valid_step(model: torch.nn.Module,
                test_data:torch.utils.data.DataLoader ,
                loss_fn : torch.nn,
-               device: str ):
+               device: str, 
+               mixed_precision_on:bool = True):
     
     test_loss = 0.0
     
     with torch.no_grad() : 
         model.eval()
         for (first , second , target ) in tqdm.tqdm(test_data):
+            
             first, second, target = first.to(device, non_blocking= True), second.to(device, non_blocking=True),\
                 target.to(device , non_blocking=  True)
-            
-            with amp.autocast():                
+            if mixed_precision_on :
+                # saves memory
+                with amp.autocast():                
+                    output = model(first , second).squeeze()
+                    loss = loss_fn (output , target )
+            else : 
                 output = model(first , second).squeeze()
-                loss = loss_fn (output , target ) 
+                loss = loss_fn (output , target )  
             
             test_loss += loss.item() 
 
@@ -93,10 +95,11 @@ def train_loop(model: torch.nn.Module,
                loss_fn:torch.nn,
                optimizer:torch.optim ,
                device: str = "cuda" ,
-               epochs : int = 10,
+               epochs : int = 5,
                early_stopping:bool = False,
-               patience:int = 10 , 
-               lr_scheduler:bool = None):
+               patience:int = 20 , 
+               lr_scheduler:torch.optim.lr_scheduler = None,
+               mixed_precision_on: bool = True ):
     train_loss_acc = []
     test_loss_acc= []
     
@@ -104,10 +107,14 @@ def train_loop(model: torch.nn.Module,
     epochs_without_imporvement = 0 
         
     for i in range(epochs):    
-            
-        train_loss = train_step(model , train_data , loss_fn= loss_fn ,optimizer= optimizer ,lr_scheduler=  lr_scheduler , device = device )
-        test_loss = test_step(model , test_data , loss_fn , device)
+        
+        # triaing step
+        train_loss = train_step(model, train_data, loss_fn = loss_fn, optimizer = optimizer ,
+                                device = device, mixed_precision_on = mixed_precision_on)
+        # validation step 
+        test_loss = valid_step(model , test_data , loss_fn , device)
 
+        # early stopping
         if early_stopping:
             if train_loss < best_loss : 
                 best_loss = train_loss 
@@ -119,7 +126,12 @@ def train_loop(model: torch.nn.Module,
             if epochs_without_imporvement >= patience :
                 print ("early stopping activated ")
                 break
-
+        
+        # learning rate scheduler 
+        if lr_scheduler is not None:
+            print ('learning rate update')    
+            lr_scheduler.step()
+        
         train_loss_acc.append(train_loss)
         test_loss_acc.append(test_loss)
         print(f"train loss: {train_loss:.4f} test loss: {test_loss:.4f}@ epoch {i}")
@@ -127,6 +139,7 @@ def train_loop(model: torch.nn.Module,
     model.load_state_dict(best_model_wts)
     return train_loss_acc , test_loss_acc
 
+# intializing weights
 def initialize_weights(m):
     if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
         nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -134,6 +147,19 @@ def initialize_weights(m):
             nn.init.constant_(m.bias, 0) 
 
 if __name__ == '__main__':
+
+    # get arguments from the console. defaults are in arguments.py  
+    args = get_arguments()
+    learning_rate = args.learning_rate
+    weight_decay = args.weight_decay
+    lr_gamma = args.lr_gamma
+    lr_step_size = args.lr_step_size
+    lr_scheduler = args.lr_scheduler
+    mixed_precision = args.mixed_precision
+    batch_size = args.batch_size
+    early_stopping = args.early_stopping
+    patience = args.patience
+    epochs = args.epochs
     
     torch.backends.cudnn.benchmark = True
     
@@ -143,9 +169,9 @@ if __name__ == '__main__':
 
     model = Model().to(device)
         
-    optimizer = torch.optim.Adam(params=model.parameters(), lr=0.001 , weight_decay= 0.01)
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=learning_rate , weight_decay= weight_decay)
 
-    scheduler = StepLR(optimizer, step_size= 1 , gamma = 0.999)
+    scheduler = StepLR(optimizer, step_size= lr_step_size , gamma = lr_gamma) if lr_scheduler else  None
 
     data_transform= data_transform = transforms.Compose([
             transforms.ToImage(),
@@ -155,17 +181,17 @@ if __name__ == '__main__':
         ])
     
     pair_data_train = Pair_Data_Loader( root=config.TRAIN_DATASET , transform = data_transform )
-    pair_dataloader_train  = DataLoader(pair_data_train, batch_size=128, shuffle=False, num_workers=2 , pin_memory=True)
+    pair_dataloader_train  = DataLoader(pair_data_train, batch_size=batch_size, shuffle=False, num_workers=2 , pin_memory=True)
 
     pair_data_test = Pair_Data_Loader( root=config.TEST_DATASET, transform=data_transform )
-    pair_dataloader_test = DataLoader(pair_data_test, batch_size=128, shuffle=False, num_workers=2 , pin_memory=True )
+    pair_dataloader_test = DataLoader(pair_data_test, batch_size=batch_size, shuffle=False, num_workers=2 , pin_memory=True )
     
     loss_function = nn.BCEWithLogitsLoss(reduction = "mean" )
     
     model.apply(initialize_weights)
 
     train_loss , test_loss = train_loop(model, pair_dataloader_train , pair_dataloader_test, 
-                                        loss_function, optimizer, early_stopping= True, patience = 5,  
-                                        device = device, epochs= 5 , lr_scheduler = scheduler )
+                                        loss_function, optimizer, early_stopping= early_stopping, patience = patience,  
+                                        device = device, epochs= epochs , lr_scheduler = scheduler )
     
     print(f'Final train loss: {train_loss} , Final test loss: {test_loss}')
