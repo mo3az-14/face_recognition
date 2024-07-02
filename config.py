@@ -16,6 +16,4 @@ KAGGLE_KEY = "692aa237541cbae7a86caed20a195c59"
 IMAGE_SIZE = (128, 128)
 
 # define the path to save the model
-OUTPUT_PATH = "output"
-MODEL_PATH = os.path.join(OUTPUT_PATH, "siamese_network")
-OUTPUT_IMAGE_PATH = os.path.join(OUTPUT_PATH, "output_image.png")
+MODEL_OUTPUT_PATH = "output/"
