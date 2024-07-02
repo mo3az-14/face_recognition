@@ -4,3 +4,4 @@ __pycache__/
 dataset/
 face_recognition.ipynb
 trace.json
+logs/

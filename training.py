@@ -13,6 +13,7 @@ import config
 from data_loaders import Pair_Data_Loader
 from model import Model
 import copy 
+import my_logger as log
 from arguments import get_arguments
 
 # training
@@ -129,11 +130,11 @@ def train_loop(model: torch.nn.Module,
         
         # learning rate scheduler 
         if lr_scheduler is not None:
-            print ('learning rate update')    
             lr_scheduler.step()
         
         train_loss_acc.append(train_loss)
         test_loss_acc.append(test_loss)
+
         print(f"train loss: {train_loss:.4f} test loss: {test_loss:.4f}@ epoch {i}")
 
     model.load_state_dict(best_model_wts)
@@ -150,11 +151,11 @@ if __name__ == '__main__':
 
     # get arguments from the console. defaults are in arguments.py  
     args = get_arguments()
-    learning_rate = args.learning_rate
+    lr = args.lr
     weight_decay = args.weight_decay
-    lr_gamma = args.lr_gamma
-    lr_step_size = args.lr_step_size
-    lr_scheduler = args.lr_scheduler
+    gamma = args.gamma
+    step_size = args.step_size
+    lr_scheduler_on = args.lr_scheduler_on
     mixed_precision = args.mixed_precision
     batch_size = args.batch_size
     early_stopping = args.early_stopping
@@ -169,9 +170,9 @@ if __name__ == '__main__':
 
     model = Model().to(device)
         
-    optimizer = torch.optim.Adam(params=model.parameters(), lr=learning_rate , weight_decay= weight_decay)
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=lr , weight_decay= weight_decay)
 
-    scheduler = StepLR(optimizer, step_size= lr_step_size , gamma = lr_gamma) if lr_scheduler else  None
+    scheduler = StepLR(optimizer, step_size= step_size , gamma = gamma) if lr_scheduler_on else  None
 
     data_transform= data_transform = transforms.Compose([
             transforms.ToImage(),
@@ -195,3 +196,23 @@ if __name__ == '__main__':
                                         device = device, epochs= epochs , lr_scheduler = scheduler )
     
     print(f'Final train loss: {train_loss} , Final test loss: {test_loss}')
+    id =log.gen_id()
+    saving_path = log.make_dir(id)
+    params = {
+        "model":model.state_dict(),
+        "optimizer": optimizer.state_dict(),
+        "train_loss":train_loss,
+        "test_loss":test_loss,
+        "lr": lr, 
+        "weight_decay": weight_decay,   
+        "gamma": gamma,   
+        "step_size": step_size,   
+        "lr_scheduler_on": lr_scheduler_on,   
+        "mixed_precision": mixed_precision, 
+        "batch_size": batch_size,   
+        "early_stopping": early_stopping,   
+        "patience": patience,   
+        "epochs": epochs,   
+        }
+    # save the model with a random_id generated
+    torch.save(params, saving_path)

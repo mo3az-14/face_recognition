@@ -16,4 +16,4 @@ KAGGLE_KEY = "692aa237541cbae7a86caed20a195c59"
 IMAGE_SIZE = (128, 128)
 
 # define the path to save the model
-MODEL_OUTPUT_PATH = "output/"
+LOGS_PATH = "logs/"
