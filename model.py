@@ -13,7 +13,7 @@ class Model(nn.Module):
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2),  
             nn.Conv2d(64, 128, 7),
-            nn.ReLU(),    
+            nn.ReLU(),
             nn.MaxPool2d(2),  
             nn.Conv2d(128, 128, 4),
             nn.ReLU(),
@@ -27,7 +27,7 @@ class Model(nn.Module):
     def forward_one(self, x):
         x = self.conv(x)
         x = x.view(x.size()[0], -1)
-        x = torch.utils.checkpoint.checkpoint( self.linear ,x , use_reentrant= False)
+        x =  self.linear (x)  
         return x
 
     def forward(self, x1, x2):

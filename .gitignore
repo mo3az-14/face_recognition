@@ -5,3 +5,4 @@ dataset/
 face_recognition.ipynb
 trace.json
 logs/
+scratch.py
