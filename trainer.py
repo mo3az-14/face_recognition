@@ -14,6 +14,7 @@ from data_loaders import Pair_Data_Loader
 from model import Model
 import copy
 import my_logger as log
+import os
 from arguments import get_arguments
 
 
@@ -237,6 +238,7 @@ if __name__ == "__main__":
 
     torch.backends.cudnn.benchmark = False
     torch.use_deterministic_algorithms(True)
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
     rng = np.random.default_rng()
 
