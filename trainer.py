@@ -26,7 +26,6 @@ def get_accuracy(probs, targets, thresholds):
     """
     acc = []
     output = []
-    print(type(probs))
     for i in thresholds:
         acc.append(((probs > i).astype(int) == targets.astype(int)).astype(int))
     for i in acc:
