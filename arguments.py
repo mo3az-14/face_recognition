@@ -9,9 +9,9 @@ def get_arguments():
         "--batch_size", type=int, default=128, help="batch size. default 128"
     )
     parser.add_argument(
-        "--num_worksers",
+        "--num_workers",
         type=int,
-        default=2,
+        default=None,
         help="number of workers for data loader. default 2",
     )
     parser.add_argument(

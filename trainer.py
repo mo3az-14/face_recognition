@@ -230,10 +230,13 @@ if __name__ == "__main__":
     batch_size = args.batch_size
     patience = args.patience
     epochs = args.epochs
+    num_workers = args.num_workers
     accuracy_interval = args.accuracy_interval
     slice_of_data = args.slice_of_data
     early_stopping_metric = args.early_stopping_metric
-    torch.backends.cudnn.benchmark = True
+
+    torch.backends.cudnn.benchmark = False
+    torch.use_deterministic_algorithms(True)
 
     rng = np.random.default_rng()
 
@@ -271,7 +274,7 @@ if __name__ == "__main__":
         pair_data_train,
         batch_size=batch_size,
         shuffle=False,
-        num_workers=2,
+        num_workers=num_workers,
         pin_memory=True,
     )
 
@@ -284,7 +287,7 @@ if __name__ == "__main__":
         pair_data_test,
         batch_size=batch_size,
         shuffle=False,
-        num_workers=2,
+        num_workers=num_workers,
         pin_memory=True,
     )
 
@@ -327,7 +330,9 @@ if __name__ == "__main__":
         "batch_size": batch_size,
         "patience": patience,
         "epochs": epochs,
-        "accuracy": accuracy_results,
+        "num_workers": num_workers,
+        "accuracy_interval": accuracy_interval,
+        "slice_of_data": slice_of_data,
         "early_stopping_metric": early_stopping_metric,
     }
     torch.save(params, saving_path)
