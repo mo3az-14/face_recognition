@@ -19,11 +19,6 @@ from arguments import get_arguments
 
 
 def get_accuracy(probs, targets, thresholds):
-    """
-    probs = np.concatenate(probs, axis=0)
-    # print (probs)
-    targets = np.concatenate(targets,axis=0)
-    """
     acc = []
     output = []
     for i in thresholds:
@@ -47,8 +42,6 @@ def train_step(
     train_loss: float = 0.0
 
     for first, second, target in tqdm.tqdm(train_data):
-        model.train()
-
         optimizer.zero_grad()
         first, second, target = (
             first.to(device, non_blocking=True),
@@ -198,8 +191,6 @@ def train_loop(
         train_loss_acc.append(train_loss)
         test_loss_acc.append(test_loss)
 
-        print(f"train loss: {train_loss:.4f} test loss: {test_loss:.4f}@ epoch {i}")
-
     if patience is not None:
         model.load_state_dict(best_model_wts)
 
@@ -274,7 +265,7 @@ if __name__ == "__main__":
     pair_dataloader_train = DataLoader(
         pair_data_train,
         batch_size=batch_size,
-        shuffle=False,
+        shuffle=True,
         num_workers=num_workers,
         pin_memory=True,
     )
@@ -335,6 +326,7 @@ if __name__ == "__main__":
         "accuracy_interval": accuracy_interval,
         "slice_of_data": slice_of_data,
         "early_stopping_metric": early_stopping_metric,
+        "accuracy": accuracy_results,
     }
     torch.save(params, saving_path)
     print(f"model saved in {saving_path}")
