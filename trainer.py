@@ -159,6 +159,7 @@ def train_loop(
             model, test_data, loss_fn, device, calculate_accuracy=accuracy_on
         )
         # early stopping
+        print(f"train loss: {train_loss} test loss: {test_loss} @ epoch {i}")
         if patience is not None:
             if early_stopping_metric == "train":
                 if train_loss < best_loss:
@@ -194,7 +195,7 @@ def train_loop(
     if patience is not None:
         model.load_state_dict(best_model_wts)
 
-    return (train_loss_acc, test_loss_acc, accuracy_interval)
+    return (train_loss_acc, test_loss_acc, accuracy_array)
 
 
 # intializing weights
