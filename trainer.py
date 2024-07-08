@@ -244,17 +244,15 @@ if __name__ == "__main__":
     )
 
     # transformations
-    data_transform = data_transform = transforms.Compose(
-        [
-            transforms.ToImage(),
-            transforms.ToDtype(
-                torch.float32,
-                scale=True,
-            ),
-            transforms.Resize(size=config.IMAGE_SIZE),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            transforms.RandomErasing(),
-        ]
+    data_transform = data_transform = nn.Sequential(
+        transforms.ToImage(),
+        transforms.ToDtype(
+            torch.float32,
+            scale=True,
+        ),
+        transforms.Resize(size=config.IMAGE_SIZE),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        transforms.RandomErasing(),
     )
 
     # data stuff
