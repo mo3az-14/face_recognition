@@ -48,7 +48,6 @@ def train_step(
             second.to(device, non_blocking=True),
             target.to(device, non_blocking=True),
         )
-
         if mixed_precision_on:
             with amp.autocast():
                 output = model(first, second).squeeze()
@@ -254,6 +253,7 @@ if __name__ == "__main__":
             ),
             transforms.Resize(size=config.IMAGE_SIZE),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            transforms.RandomErasing(),
         ]
     )
 
