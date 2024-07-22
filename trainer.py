@@ -8,23 +8,40 @@ import torch.utils.data
 import torchvision.transforms.v2 as transforms
 import torch.cuda.amp as amp
 import tqdm
-from torch.optim.lr_scheduler import StepLR
+from sklearn.metrics import precision_recall_fscore_support
+from torch.optim import Adam, SGD
+from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR
 import config
 from data_loaders import Pair_Data_Loader
 from model import Model
 import copy
 import my_logger as log
-import os
 from arguments import get_arguments
 
+torch.use_deterministic_algorithms(True)
 
-def get_accuracy(probs, targets, thresholds):
-    acc = []
-    output = []
+
+def get_metrics(
+    probs: torch.tensor, targets: torch.tensor, thresholds: list[float]
+) -> dict:
+    # each elements in the array is the accuracy for a different threshold
+
+    # output dictionary
+    output = {"accuracy": [], "precision": [], "recall": [], "fscore": []}
+
+    # get the results of the model
     for i in thresholds:
-        acc.append(((probs > i).astype(int) == targets.astype(int)).astype(int))
-    for i in acc:
-        output.append(i.sum() / len(probs))
+        predictions = (probs > i).astype(int)
+        print(predictions)
+        print(targets)
+        prec, rec, f, _ = precision_recall_fscore_support(targets, predictions)
+        acc = predictions == targets
+        acc = acc.sum() / len(targets)
+        output["accuracy"].append(acc)
+        output["precision"].append(prec)
+        output["recall"].append(rec)
+        output["fscore"].append(f)
+
     return output
 
 
@@ -137,7 +154,7 @@ def train_loop(
         best_loss = float("inf")
         epochs_without_imporvement = 0
 
-    accuracy_array = []
+    metrics = []
 
     for i in range(epochs):
         accuracy_on = (
@@ -186,7 +203,7 @@ def train_loop(
 
         if accuracy_on:
             probs, targets = np.concatenate(probs), np.concatenate(targets)
-            accuracy_array.append(get_accuracy(probs, targets, [0.5, 0.1]))
+            metrics.append(get_metrics(probs, targets, [0.5, 0.1]))
 
         train_loss_acc.append(train_loss)
         test_loss_acc.append(test_loss)
@@ -194,7 +211,7 @@ def train_loop(
     if patience is not None:
         model.load_state_dict(best_model_wts)
 
-    return (train_loss_acc, test_loss_acc, accuracy_array)
+    return (train_loss_acc, test_loss_acc, metrics)
 
 
 # intializing weights
@@ -228,7 +245,6 @@ if __name__ == "__main__":
 
     torch.backends.cudnn.benchmark = False
     torch.use_deterministic_algorithms(True)
-    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
     rng = np.random.default_rng()
 
@@ -236,7 +252,7 @@ if __name__ == "__main__":
 
     model = Model().to(device)
 
-    optimizer = torch.optim.Adam(params=model.parameters(), lr=lr)
+    optimizer = Adam(params=model.parameters(), lr=lr, weight_decay=weight_decay)
 
     # learning rate scheduler
     scheduler = (
@@ -253,6 +269,7 @@ if __name__ == "__main__":
         transforms.Resize(size=config.IMAGE_SIZE),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         transforms.RandomErasing(),
+        transforms.RandomAffine(180),
     )
 
     # data stuff
@@ -288,7 +305,7 @@ if __name__ == "__main__":
     model.apply(initialize_weights)
 
     # training
-    train_loss, test_loss, accuracy_results = train_loop(
+    train_loss, test_loss, metrics = train_loop(
         model,
         pair_dataloader_train,
         pair_dataloader_test,
@@ -325,7 +342,10 @@ if __name__ == "__main__":
         "accuracy_interval": accuracy_interval,
         "slice_of_data": slice_of_data,
         "early_stopping_metric": early_stopping_metric,
-        "accuracy": accuracy_results,
+        "accuracy": metrics["accuracy"],
+        "precision": metrics["precision"],
+        "recall": metrics["recall"],
+        "fscore": metrics["fscore"],
     }
     torch.save(params, saving_path)
     print(f"model saved in {saving_path}")
