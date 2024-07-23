@@ -11,7 +11,7 @@ def get_arguments():
     parser.add_argument(
         "--num_workers",
         type=int,
-        default=None,
+        default=0,
         help="number of workers for data loader. default 2",
     )
     parser.add_argument(
@@ -22,8 +22,8 @@ def get_arguments():
     )
     parser.add_argument(
         "--lr_scheduler_on",
-        type=bool,
-        default=True,
+        type=int,
+        default=1,
         help="Learning rate for the model. default True",
     )
     parser.add_argument(
@@ -43,8 +43,8 @@ def get_arguments():
     )
     parser.add_argument(
         "--mixed_precision",
-        type=bool,
-        default=True,
+        type=int,
+        default=1,
         help="enable mixed precision. default True",
     )
     parser.add_argument(

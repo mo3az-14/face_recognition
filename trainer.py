@@ -18,22 +18,12 @@ import copy
 import my_logger as log
 from arguments import get_arguments
 
-torch.use_deterministic_algorithms(True)
-
 
 def get_metrics(
-    probs: torch.tensor, targets: torch.tensor, thresholds: list[float]
+    probs: torch.tensor, targets: torch.tensor, thresholds: list[float], output
 ) -> dict:
-    # each elements in the array is the accuracy for a different threshold
-
-    # output dictionary
-    output = {"accuracy": [], "precision": [], "recall": [], "fscore": []}
-
-    # get the results of the model
     for i in thresholds:
         predictions = (probs > i).astype(int)
-        print(predictions)
-        print(targets)
         prec, rec, f, _ = precision_recall_fscore_support(targets, predictions)
         acc = predictions == targets
         acc = acc.sum() / len(targets)
@@ -146,7 +136,7 @@ def train_loop(
 ):
     train_loss_acc = []
     test_loss_acc = []
-
+    scaler = None
     if mixed_precision_on:
         scaler = amp.GradScaler()
 
@@ -154,12 +144,15 @@ def train_loop(
         best_loss = float("inf")
         epochs_without_imporvement = 0
 
-    metrics = []
+    metrics = {
+        "accuracy": [],
+        "precision": [],
+        "recall": [],
+        "fscore": [],
+    }
 
     for i in range(epochs):
-        accuracy_on = (
-            accuracy_interval is not None and (i % accuracy_interval) == 0 and i != 0
-        )
+        accuracy_on = accuracy_interval is not None and (i % accuracy_interval) == 0
         # triaing step
         train_loss = train_step(
             model,
@@ -203,7 +196,7 @@ def train_loop(
 
         if accuracy_on:
             probs, targets = np.concatenate(probs), np.concatenate(targets)
-            metrics.append(get_metrics(probs, targets, [0.5, 0.1]))
+            metrics = get_metrics(probs, targets, [0.5], output=metrics)
 
         train_loss_acc.append(train_loss)
         test_loss_acc.append(test_loss)
@@ -243,8 +236,7 @@ if __name__ == "__main__":
     slice_of_data = args.slice_of_data
     early_stopping_metric = args.early_stopping_metric
 
-    torch.backends.cudnn.benchmark = False
-    torch.use_deterministic_algorithms(True)
+    torch.backends.cudnn.benchmark = True
 
     rng = np.random.default_rng()
 
@@ -315,12 +307,12 @@ if __name__ == "__main__":
         device=device,
         epochs=epochs,
         lr_scheduler=scheduler,
+        mixed_precision_on=mixed_precision,
         accuracy_interval=accuracy_interval,
         early_stopping_metric=early_stopping_metric,
     )
 
     print(f"Final train loss: {train_loss} , Final test loss: {test_loss}")
-
     # saving settings and model
     id = log.gen_id()
     saving_path = log.make_dir(id)

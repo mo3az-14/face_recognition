@@ -119,7 +119,8 @@ text4 = """## Results and numbers
 
 ##### Mixed precision training and gradient scailing
 
-lorem ipsum 
+Let's start with mixed precision training and gradient scailing. Thanks to pytorch it was as easy as adding a few 5 lines of code. This
+# got me from 15 minutes/iteration to 1:30 minutes/iteration WHICH IS HUGE. Although it pytorch's guide suggests a 2~3x boost 
 
 ##### Learning rate schedulers  
 
