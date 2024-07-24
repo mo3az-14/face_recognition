@@ -72,23 +72,23 @@ def get_arguments():
         help="metric for early stopping. default test",
     )
     parser.add_argument(
-        name="--init",
+        "--init",
         type=int,
         default=1,
         help="command for enabling or disabling the intialization",
     )
     parser.add_argument(
-        name="--cos",
+        "--cos",
         type=int,
         default=1,
         help="1-> cos annealing LR scheduler 0-> Step Lr Scheduler (spicify gamma and step size. default : 0.99 and 1)",
     )
     parser.add_argument(
-        name="--p",
+        "--p",
         type=float,
         default=0.5,
         help="p for data augmentation",
     )
-    parser.add_argument(name="--adam", type=int, default=1, help="1 -> adam , 0-> SGD")
+    parser.add_argument("--adam", type=int, default=1, help="1 -> adam , 0-> SGD")
     args = parser.parse_args()
     return args
