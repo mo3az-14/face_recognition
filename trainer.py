@@ -225,6 +225,9 @@ if __name__ == "__main__":
     lr = args.lr
     weight_decay = args.weight_decay
     gamma = args.gamma
+    adam = args.adam
+    init = args.init
+    cos = args.cos
     step_size = args.step_size
     lr_scheduler_on = args.lr_scheduler_on
     mixed_precision = args.mixed_precision
@@ -235,7 +238,7 @@ if __name__ == "__main__":
     accuracy_interval = args.accuracy_interval
     slice_of_data = args.slice_of_data
     early_stopping_metric = args.early_stopping_metric
-
+    p = args.p
     torch.backends.cudnn.benchmark = True
 
     rng = np.random.default_rng()
@@ -244,12 +247,19 @@ if __name__ == "__main__":
 
     model = Model().to(device)
 
-    optimizer = Adam(params=model.parameters(), lr=lr, weight_decay=weight_decay)
+    optimizer = (
+        Adam(params=model.parameters(), lr=lr, weight_decay=weight_decay)
+        if adam
+        else SGD(params=model.parameters(), lr=lr, weight_decay=weight_decay)
+    )
 
     # learning rate scheduler
-    scheduler = (
-        StepLR(optimizer, step_size=step_size, gamma=gamma) if lr_scheduler_on else None
-    )
+    scheduler = None
+    if lr_scheduler_on:
+        if cos:
+            CosineAnnealingLR(optimizer, T_max=50)
+        else:
+            StepLR(optimizer, step_size=step_size, gamma=gamma)
 
     # transformations
     data_transform = data_transform = nn.Sequential(
@@ -259,9 +269,11 @@ if __name__ == "__main__":
             scale=True,
         ),
         transforms.Resize(size=config.IMAGE_SIZE),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        transforms.RandomErasing(),
+        transforms.RandomHorizontalFlip(p=p),
+        transforms.RandomVerticalFlip(p=p),
+        transforms.RandomErasing(p=p),
         transforms.RandomAffine(180),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     )
 
     # data stuff
@@ -294,7 +306,8 @@ if __name__ == "__main__":
     loss_function = nn.BCEWithLogitsLoss(reduction="mean")
 
     # weights intialization
-    model.apply(initialize_weights)
+    if init == 1:
+        model.apply(initialize_weights)
 
     # training
     train_loss, test_loss, metrics = train_loop(

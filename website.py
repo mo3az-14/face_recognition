@@ -119,24 +119,29 @@ text4 = """## Results and numbers
 
 ##### Mixed precision training and gradient scailing
 
-Let's start with mixed precision training and gradient scailing. Thanks to pytorch it was as easy as adding a few 5 lines of code. This
-# got me from 15 minutes/iteration to 1:30 minutes/iteration WHICH IS HUGE. Although it pytorch's guide suggests a 2~3x boost 
+According to pytorch's tutorial mixed precision can save memory and offer great speed ups (2~3x). As for the 
+speed up, It didn't really speed up the training time on my friend's machine but on my machine (which is 
+VERY SLOW in comparison) it cutdown the time from 15 mins/iteration -> 1:30 min./iteration!? yeah I don't really
+know why. As for the memory tho it managed to save us 1.8GB of vram which is AMAZING and allowed us to run
+more experiments at the same time. Now I know that mixed precision training does have impact on the model's 
+performance but as I said before the goal was to try different techniques for fun!
 
 ##### Learning rate schedulers  
 
-lorem ipsum 
+
 
 ##### Weight intialization
 
-lorem ipsum 
+Well this is a bit of weird one, I tried using xavier normal & uniform intialization but it made the model unable
+to learn?. Please send an email me if you have an explaination. 
 
 ##### Hyperparameter search and optimization
 
-lorem ipsum 
 
-##### Transforms
 
-lorem ipsum 
+##### image 
+
+
 
 """
 st.markdown(text4)
