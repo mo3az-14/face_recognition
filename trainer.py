@@ -44,10 +44,13 @@ def train_step(
     mixed_precision_on: bool = True,
     device: str = "cuda",
     scaler=None,
+    calculate_accuracy: bool = False,
 ):
     model.train()
     train_loss: float = 0.0
 
+    probs = []
+    targets = []
     for first, second, target in tqdm.tqdm(train_data):
         optimizer.zero_grad()
         first, second, target = (
@@ -73,10 +76,13 @@ def train_step(
             loss.backward()
 
             optimizer.step()
+        with torch.no_grad():
+            train_loss += loss.item()
+            if calculate_accuracy:
+                probs.append(torch.sigmoid(output).cpu().numpy())
+                targets.append(target.squeeze().cpu().numpy())
 
-        train_loss += loss.item()
-
-    return train_loss
+    return train_loss, probs, targets
 
 
 # validation
@@ -131,7 +137,7 @@ def train_loop(
     patience: int = 20,
     lr_scheduler: torch.optim.lr_scheduler = None,
     mixed_precision_on: bool = True,
-    accuracy_interval: int = None,
+    calc_metrics_interval: int = None,
     early_stopping_metric: str = None,
 ):
     train_loss_acc = []
@@ -144,7 +150,13 @@ def train_loop(
         best_loss = float("inf")
         epochs_without_imporvement = 0
 
-    metrics = {
+    train_metrics = {
+        "accuracy": [],
+        "precision": [],
+        "recall": [],
+        "fscore": [],
+    }
+    test_metrics = {
         "accuracy": [],
         "precision": [],
         "recall": [],
@@ -152,9 +164,11 @@ def train_loop(
     }
 
     for i in range(epochs):
-        accuracy_on = accuracy_interval is not None and (i % accuracy_interval) == 0
+        calculate_metrics = (
+            calc_metrics_interval is not None and (i % calc_metrics_interval) == 0
+        )
         # triaing step
-        train_loss = train_step(
+        train_loss, train_probs, train_targets = train_step(
             model,
             train_data,
             loss_fn=loss_fn,
@@ -162,10 +176,11 @@ def train_loop(
             device=device,
             mixed_precision_on=mixed_precision_on,
             scaler=scaler,
+            calculate_accuracy=calculate_metrics,
         )
         # validation step
-        test_loss, probs, targets = valid_step(
-            model, test_data, loss_fn, device, calculate_accuracy=accuracy_on
+        test_loss, test_probs, test_targets = valid_step(
+            model, test_data, loss_fn, device, calculate_accuracy=calculate_metrics
         )
         # early stopping
         print(f"train loss: {train_loss} test loss: {test_loss} @ epoch {i}")
@@ -194,9 +209,21 @@ def train_loop(
         if lr_scheduler is not None:
             lr_scheduler.step()
 
-        if accuracy_on:
-            probs, targets = np.concatenate(probs), np.concatenate(targets)
-            metrics = get_metrics(probs, targets, [0.5], output=metrics)
+        if calculate_metrics:
+            train_probs, train_targets = (
+                np.concatenate(train_probs),
+                np.concatenate(train_targets),
+            )
+            test_probs, test_targets = (
+                np.concatenate(test_probs),
+                np.concatenate(test_targets),
+            )
+            train_metrics = get_metrics(
+                train_probs, train_targets, [0.5], output=train_metrics
+            )
+            test_metrics = get_metrics(
+                test_probs, test_targets, [0.5], output=test_metrics
+            )
 
         train_loss_acc.append(train_loss)
         test_loss_acc.append(test_loss)
@@ -204,7 +231,7 @@ def train_loop(
     if patience is not None:
         model.load_state_dict(best_model_wts)
 
-    return (train_loss_acc, test_loss_acc, metrics)
+    return (train_loss_acc, test_loss_acc, train_metrics, test_metrics)
 
 
 # intializing weights
@@ -235,7 +262,7 @@ if __name__ == "__main__":
     patience = args.patience
     epochs = args.epochs
     num_workers = args.num_workers
-    accuracy_interval = args.accuracy_interval
+    calc_metrics_interval = args.calc_metrics_interval
     slice_of_data = args.slice_of_data
     early_stopping_metric = args.early_stopping_metric
     p = args.p
@@ -310,7 +337,7 @@ if __name__ == "__main__":
         model.apply(initialize_weights)
 
     # training
-    train_loss, test_loss, metrics = train_loop(
+    train_loss, test_loss, train_metrics, test_metrics = train_loop(
         model,
         pair_dataloader_train,
         pair_dataloader_test,
@@ -321,13 +348,11 @@ if __name__ == "__main__":
         epochs=epochs,
         lr_scheduler=scheduler,
         mixed_precision_on=mixed_precision,
-        accuracy_interval=accuracy_interval,
+        calc_metrics_interval=calc_metrics_interval,
         early_stopping_metric=early_stopping_metric,
     )
 
-    print(f"Final train loss: {train_loss} , Final test loss: {test_loss}")
     # saving settings and model
-    id = log.gen_id()
     saving_path = log.make_dir(id)
     params = {
         "model": model.state_dict(),
@@ -344,13 +369,17 @@ if __name__ == "__main__":
         "patience": patience,
         "epochs": epochs,
         "num_workers": num_workers,
-        "accuracy_interval": accuracy_interval,
+        "calc_metrics_interval": calc_metrics_interval,
         "slice_of_data": slice_of_data,
         "early_stopping_metric": early_stopping_metric,
-        "accuracy": metrics["accuracy"],
-        "precision": metrics["precision"],
-        "recall": metrics["recall"],
-        "fscore": metrics["fscore"],
+        "train_accuracy": train_metrics["accuracy"],
+        "train_precision": train_metrics["precision"],
+        "train_recall": train_metrics["recall"],
+        "train_fscore": train_metrics["fscore"],
+        "test_accuracy": test_metrics["accuracy"],
+        "test_precision": test_metrics["precision"],
+        "test_recall": test_metrics["recall"],
+        "test_fscore": test_metrics["fscore"],
     }
     torch.save(params, saving_path)
     print(f"model saved in {saving_path}")

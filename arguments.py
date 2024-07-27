@@ -54,7 +54,7 @@ def get_arguments():
         help="patience for early stopping. default 20",
     )
     parser.add_argument(
-        "--accuracy_interval",
+        "--calc_metrics_interval",
         type=int,
         default=None,
         help="interval to calculate accuracy. default 1 which is off",
