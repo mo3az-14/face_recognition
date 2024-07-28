@@ -14,6 +14,7 @@ def inference(img1: tensor, img2: tensor, threshold: float) -> int:
     return int(torch.sigmoid(model(img1, img2)) > threshold)
 
 
+# styles for the adding color to headings
 st.markdown(
     """
     <style>
@@ -40,17 +41,20 @@ st.markdown(
 img1 = None
 img2 = None
 
-# load model
-checkpoint = torch.load(r"best_model_with_history.pt")
+checkpoint = torch.load(r"test_model1.pt")
+
 model = Model()
 model.load_state_dict(checkpoint["model"])
+model.eval()
+
 accuracy = checkpoint["accuracy"]
 precision = checkpoint["precision"]
 epochs = checkpoint["epochs"]
 recall = checkpoint["recall"]
 fscore = checkpoint["fscore"]
 train_loss, test_loss = checkpoint["train_loss"], checkpoint["test_loss"]
-model.eval()
+
+# transformations
 data_transform = nn.Sequential(
     transforms.ToImage(),
     transforms.ToDtype(
@@ -61,11 +65,13 @@ data_transform = nn.Sequential(
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 )
 
+# Title of the page
 st.markdown(
     """<div class='main_title'>face recognition by moaaz</div>""",
     unsafe_allow_html=True,
 )
 
+# Who am I section
 text1 = """<div class='subtitle'> Where am I?</div>
 If you are here that means you want to see my face recognition project, 
 yay! If not, how did you get here? This is my machine learning project where
@@ -76,6 +82,7 @@ And don’t worry the data doesn’t get saved, even if I want to, I don’t kno
 """
 st.markdown(text1, unsafe_allow_html=True)
 
+# Try it section
 text2 = """<div class='subtitle'>Try it!</div>
 
 Please upload an image of you. This will be used as the source image. 
@@ -83,12 +90,14 @@ Please choose a good image and don't try to break it because it will break :swea
 """
 st.markdown(text2, unsafe_allow_html=True)
 
+# upload photos
 uploaded_file1 = st.file_uploader(
     label="upload an image of your face to be used as the ground truth",
     type=["png", "jpeg", "jpg"],
     key="img2",
 )
 
+# if a file is uploaded apply transformations required and display it
 if uploaded_file1 is not None:
     ground_truth_image1 = Image.open(uploaded_file1)
     img1 = data_transform(ground_truth_image1)
@@ -123,6 +132,7 @@ if img1 is not None and img2 is not None:
     else:
         st.markdown("""this image **is not** the same as the ground truth :x:""")
 
+# The project section
 text3 = """<div class='subtitle'>The project</div>
 
 This project is an attempt to replicate 
@@ -130,8 +140,8 @@ This project is an attempt to replicate
 (https://www.cs.cmu.edu/~rsalakhu/papers/oneshot1.pdf "Siamese Neural Networks for One-shot Image Recognition") 
 paper with the twist of using the [lfw](https://www.kaggle.com/datasets/atulanandjha/lfwpeople "LFW from kaggle") dataset instead of the
 [omniglot](https://www.kaggle.com/datasets/qweenink/omniglot "omniglot from kaggle") dataset. The goal of the project is to match the
-faces of people (a very naive face recognition/lock for the phones).The main purpose of this project to me was **learning**.
-I learned a lot about pytorch (90%), numpy (10%) and computer vision in general in this project. 
+faces of people (a very naive face recognition/lock for the phones).The main purpose of this project to me was **learning**.I learned a 
+lot about pytorch (90%), numpy (10%) and computer vision in general in this project. 
 My goal was to get my hands dirty with pytorch and try replicating a paper.
 
 Here is a list of stuff I used/tried in this project:
@@ -152,6 +162,7 @@ and much more.
 """
 st.markdown(text3, unsafe_allow_html=True)
 
+# Some of the things I liked section
 text4 = """<div class='subtitle'>Some of the things that I liked :</div>
 
 <div class='subsub'> Mixed precision training and gradient scailing</div>
@@ -177,6 +188,8 @@ to learn?. Please send an email me if you have an explaination.
 """
 st.markdown(text4, unsafe_allow_html=True)
 
+# charts
+# loss chart
 loss_fig = go.Figure()
 loss_fig.add_trace(
     go.Scatter(
@@ -196,60 +209,107 @@ loss_fig.add_trace(
         marker={"color": "rgb(161, 195, 73)"},
     )
 )
-
 loss_fig_config = {
+    "title": {"text": "training vs test loss"},
     "xaxis": {"showgrid": False},
     "yaxis": {"showgrid": False},
 }
 loss_fig.update_layout(loss_fig_config)
+st.plotly_chart(loss_fig)
 
+# accuracy chart
 accuracy_fig = go.Figure()
 accuracy_fig.add_trace(
     go.Scatter(
         x=np.arange(1, epochs + 1),
         y=accuracy,
         mode="lines",
+        marker={"color": "rgb(72, 169, 166)"},
     )
 )
-accuracy_fig_config = {"title": {"text": "test accuracy"}}
+accuracy_fig_config = {
+    "title": {"text": "test accuracy "},
+    "xaxis_title": {
+        "text": "(calculated every 2 epochs)",
+        "font": {"color": "rgb(184, 184, 184)"},
+    },
+    "xaxis": {"showgrid": False},
+    "yaxis": {"showgrid": False},
+}
 accuracy_fig.update_layout(accuracy_fig_config)
+st.plotly_chart(accuracy_fig)
 
+# precision chart
 precision_fig = go.Figure()
 precision_fig.add_trace(
-    go.Scatter(x=np.arange(1, epochs + 1), y=np.array(precision)[:, 0], mode="lines")
+    go.Scatter(
+        x=np.arange(1, epochs + 1),
+        y=np.array(precision)[:, 0],
+        mode="lines",
+        marker={"color": "rgb(72, 169, 166)"},
+    )
 )
-precision_fig_config = {"title": {"text": "test precision"}}
+precision_fig_config = {
+    "title": {"text": "test precision"},
+    "xaxis_title": {
+        "text": "(calculated every 2 epochs)",
+        "font": {"color": "rgb(184, 184, 184)"},
+    },
+    "xaxis": {"showgrid": False},
+    "yaxis": {"showgrid": False},
+}
 precision_fig.update_layout(precision_fig_config)
+st.plotly_chart(precision_fig)
 
+# recall chart
 recall_fig = go.Figure()
 recall_fig.add_trace(
-    go.Scatter(x=np.arange(1, epochs + 1), y=np.array(recall)[:, 0], mode="lines")
+    go.Scatter(
+        x=np.arange(1, epochs + 1),
+        y=np.array(recall)[:, 0],
+        mode="lines",
+        marker={"color": "rgb(72, 169, 166)"},
+    )
 )
-recall_fig_config = {"title": {"text": "test recall"}}
+recall_fig_config = {
+    "title": {"text": "test recall"},
+    "xaxis_title": {
+        "text": "(calculated every 2 epochs)",
+        "font": {"color": "rgb(184, 184, 184)"},
+    },
+    "xaxis": {"showgrid": False},
+    "yaxis": {"showgrid": False},
+}
 recall_fig.update_layout(recall_fig_config)
+st.plotly_chart(recall_fig)
 
+# fscore chart
 fscore_fig = go.Figure()
 fscore_fig.add_trace(
-    go.Scatter(x=np.arange(1, epochs + 1), y=np.array(fscore)[:, 0], mode="lines")
+    go.Scatter(
+        x=np.arange(1, epochs + 1),
+        y=np.array(fscore)[:, 0],
+        mode="lines",
+        marker={"color": "rgb(72, 169, 166)"},
+    )
 )
 fscore_fig_config = {
     "title": {"text": "test fscore"},
+    "xaxis_title": {
+        "text": "(calculated every 2 epochs)",
+        "font": {"color": "rgb(184, 184, 184)"},
+    },
+    "xaxis": {"showgrid": False},
+    "yaxis": {
+        "showgrid": False,
+    },
 }
 fscore_fig.update_layout(fscore_fig_config)
-
-figures = [loss_fig, accuracy_fig, precision_fig, recall_fig, fscore_fig]
-
-for fig in figures:
-    st.plotly_chart(fig)
+st.plotly_chart(fscore_fig, **{"config": fscore_fig_config})
 
 
-text5 = """
-
-"""
-
-st.markdown(text5)
-
-text6 = """## contacts
+# contact me section
+text6 = """<div class='subtitle'>contact me</div>
 
 gmail : moaaz2tarik1@gmail.com
 
@@ -258,4 +318,4 @@ Linkedin: [https://www.linkedin.com/in/moaaz-tarek/](https://www.linkedin.com/in
 github: [https://github.com/mo3az-14](https://github.com/mo3az-14 "moaaz tarek")
 
 """
-st.markdown(text6)
+st.markdown(text6, unsafe_allow_html=True)

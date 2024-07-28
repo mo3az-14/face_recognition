@@ -9,3 +9,5 @@ scratch.py
 fidging.ipynb
 best_model_with_history.pt
 best_model_no_history.pt
+model.pt
+test_model1.pt

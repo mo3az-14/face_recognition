@@ -50,7 +50,7 @@ def get_arguments():
     parser.add_argument(
         "--patience",
         type=int,
-        default=None,
+        default=0,
         help="patience for early stopping. default 20",
     )
     parser.add_argument(
