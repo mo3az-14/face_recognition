@@ -28,9 +28,9 @@ def get_metrics(
         acc = predictions == targets
         acc = acc.sum() / len(targets)
         output["accuracy"].append(acc)
-        output["precision"].append(prec)
-        output["recall"].append(rec)
-        output["fscore"].append(f)
+        output["precision"].append(prec[0])
+        output["recall"].append(rec[0])
+        output["fscore"].append(f[0])
 
     return output
 
@@ -146,9 +146,9 @@ def train_loop(
     if mixed_precision_on:
         scaler = amp.GradScaler()
 
-    if patience is not None:
-        best_loss = float("inf")
-        epochs_without_imporvement = 0
+    best_loss = float("inf")
+    epochs_without_imporvement = 0
+    best_accuracy, best_precision, best_recall = 0, 0, 0
 
     train_metrics = {
         "accuracy": [],
@@ -182,28 +182,6 @@ def train_loop(
         test_loss, test_probs, test_targets = valid_step(
             model, test_data, loss_fn, device, calculate_accuracy=calculate_metrics
         )
-        # early stopping
-        print(f"train loss: {train_loss} test loss: {test_loss} @ epoch {i}")
-        if patience is not None:
-            if early_stopping_metric == "train":
-                if train_loss < best_loss:
-                    best_loss = train_loss
-                    epochs_without_imporvement = 0
-                    best_model_wts = copy.deepcopy(model.state_dict())
-                else:
-                    epochs_without_imporvement += 1
-
-            else:
-                if test_loss < best_loss:
-                    best_loss = test_loss
-                    epochs_without_imporvement = 0
-                    best_model_wts = copy.deepcopy(model.state_dict())
-                else:
-                    epochs_without_imporvement += 1
-
-            if epochs_without_imporvement >= patience:
-                print("early stopping activated ")
-                break
 
         # learning rate scheduler
         if lr_scheduler is not None:
@@ -224,14 +202,53 @@ def train_loop(
             test_metrics = get_metrics(
                 test_probs, test_targets, [0.5], output=test_metrics
             )
+            del (train_probs, train_targets)
+        if early_stopping_metric == "train":
+            if train_loss < best_loss:
+                best_loss = train_loss
+                epochs_without_imporvement = 0
+                best_loss_model = copy.deepcopy(model.state_dict())
+            else:
+                epochs_without_imporvement += 1
+        else:
+            if test_loss < best_loss:
+                best_loss = test_loss
+                epochs_without_imporvement = 0
+                best_loss_model = copy.deepcopy(model.state_dict())
+            else:
+                epochs_without_imporvement += 1
+
+        if best_accuracy < test_metrics["accuracy"][-1]:
+            best_accuracy_model = copy.deepcopy(model.state_dict())
+        if best_precision < test_metrics["precision"][-1]:
+            best_precision_model = copy.deepcopy(model.state_dict())
+        if best_recall < test_metrics["recall"][-1]:
+            best_recall_model = copy.deepcopy(model.state_dict())
 
         train_loss_acc.append(train_loss)
         test_loss_acc.append(test_loss)
 
-    if patience is not None:
-        model.load_state_dict(best_model_wts)
+        print(
+            f"train loss: {train_loss} test loss: {test_loss} train accuracy: {train_metrics['accuracy'][-1]} test accuracy: {test_metrics['accuracy'][-1]} @ epoch {i}"
+        )
 
-    return (train_loss_acc, test_loss_acc, train_metrics, test_metrics)
+        if epochs_without_imporvement >= patience and patience != 0:
+            models = {
+                "best_loss_model": best_loss_model,
+                "best_accuracy_model": best_accuracy_model,
+                "best_precision_model": best_precision_model,
+                "best_recall_model": best_recall_model,
+            }
+            print("early stopping activated ")
+            return (train_loss_acc, test_loss_acc, train_metrics, test_metrics, models)
+
+    models = {
+        "best_loss_model": best_loss_model,
+        "best_accuracy_model": best_accuracy_model,
+        "best_precision_model": best_precision_model,
+        "best_recall_model": best_recall_model,
+    }
+    return (train_loss_acc, test_loss_acc, train_metrics, test_metrics, models)
 
 
 # intializing weights
@@ -337,7 +354,7 @@ if __name__ == "__main__":
         model.apply(initialize_weights)
 
     # training
-    train_loss, test_loss, train_metrics, test_metrics = train_loop(
+    train_loss, test_loss, train_metrics, test_metrics, models = train_loop(
         model,
         pair_dataloader_train,
         pair_dataloader_test,
@@ -352,10 +369,11 @@ if __name__ == "__main__":
         early_stopping_metric=early_stopping_metric,
     )
 
+    id = log.gen_id()
     # saving settings and model
     saving_path = log.make_dir(id)
     params = {
-        "model": model.state_dict(),
+        "model": models,
         "optimizer": optimizer.state_dict(),
         "train_loss": train_loss,
         "test_loss": test_loss,

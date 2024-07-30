@@ -307,7 +307,14 @@ fscore_fig_config = {
 fscore_fig.update_layout(fscore_fig_config)
 st.plotly_chart(fscore_fig, **{"config": fscore_fig_config})
 
+text5 = """<div class='subtitle'>bad results and goal of project?</div>
 
+Well the results aren't impressive and frankly we get only 80\%\ accuracy on test data which is nothing compared to the current state of 
+the art models which reach 99.80\%\ accuracy but the goal of the project was to try to  
+
+"""
+
+st.markdown(text5, unsafe_allow_html=True)
 # contact me section
 text6 = """<div class='subtitle'>contact me</div>
 
