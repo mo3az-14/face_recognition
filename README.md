@@ -40,6 +40,7 @@ we can choose between
 
 ### Arguments
 
+```
 --epochs => No. of epochs for training. default 5
 
 --batch_size => Batch size . default 128
@@ -73,3 +74,4 @@ we can choose between
 --p => probalitiy for data augmentation. default 0.5
 
 --adam => use Adam optimizer or SGD. 1->Adam and 0->SGD
+```
