@@ -12,7 +12,7 @@ def get_arguments():
         "--num_workers",
         type=int,
         default=0,
-        help="number of workers for data loader. default 2",
+        help="number of workers for data loader. default 0",
     )
     parser.add_argument(
         "--lr",
@@ -24,7 +24,7 @@ def get_arguments():
         "--lr_scheduler_on",
         type=int,
         default=1,
-        help="Learning rate for the model. default True",
+        help="Learning rate for the model. default 1",
     )
     parser.add_argument(
         "--gamma",
@@ -39,7 +39,7 @@ def get_arguments():
         help="step size for learning rate scheduler. default 1",
     )
     parser.add_argument(
-        "--weight_decay", type=float, default=0.01, help="weight decay. default 0"
+        "--weight_decay", type=float, default=0.01, help="weight decay. default 0.01"
     )
     parser.add_argument(
         "--mixed_precision",
@@ -56,14 +56,14 @@ def get_arguments():
     parser.add_argument(
         "--calc_metrics_interval",
         type=int,
-        default=None,
-        help="interval to calculate accuracy. default 1 which is off",
+        default=1,
+        help="interval to calculate accuracy. default 1",
     )
     parser.add_argument(
         "--slice_of_data",
         type=int,
         default=None,
-        help="gets only a slice of data. default is None which is all data",
+        help="gets only a slice of data. default is None which is all data. default None",
     )
     parser.add_argument(
         "--early_stopping_metric",

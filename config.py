@@ -6,8 +6,8 @@ TEST_DATASET = "dataset/test"
 TRAIN_PRECENT = 0.8
 
 # kaggle
-KAGGLE_USERNAME = "moaaztarik"
-KAGGLE_KEY = "692aa237541cbae7a86caed20a195c59"
+KAGGLE_USERNAME = "your username"
+KAGGLE_KEY = "your token"
 
 # model input image size
 IMAGE_SIZE = (128, 128)
