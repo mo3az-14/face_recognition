@@ -41,19 +41,35 @@ we can choose between
 ### Arguments
 
 --epochs => No. of epochs for training. default 5
+
 --batch_size => Batch size . default 128
+
 --num_workers => No. of CPU cores used in dataloaders. default 0
+
 --lr => Learning rate. default 0.0001
+
 --lr_scheduler_on => Turn learning rate scheduler on or off. default: 1 (0 or 1)
+
 --gamma => Multiplicative factor of learning rate decay for StepLR. default 0.999
+
 --step_size => Period of learning rate decay for StepLR. default 1
+
 --weight_decay => Weight decay (L2 penalty). default: 0.01
+
 --mixed_precision => use mixed precision training. default: 1 (0 or 1)
+
 --patience => No. of epochs to wait if there is no improvement in the early stoping metric defaut: 0 (early stopping is off)
+
 --calc_metrics_interval => Period to calculate performance metrics. default: 1
+
 --slice_of_data => train on a subset (slice) of data. default: None (test)
+
 --early_stopping_metric => which loss to use for early stopping "train" or "test".
+
 --init => use weight intialization. default 1
+
 --cos => use CosineAnnealingLR or StepLR. 1->CosineAnnealingLR and 0-> StepLR. default 1
+
 --p => probalitiy for data augmentation. default 0.5
+
 --adam => use Adam optimizer or SGD. 1->Adam and 0->SGD
