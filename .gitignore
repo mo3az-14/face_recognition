@@ -1,0 +1,13 @@
+__pycache__/ 
+.ipynb_checkpoints/
+.virtual_documents/
+dataset/
+face_recognition.ipynb
+trace.json
+logs/
+scratch.py
+fidging.ipynb
+best_model_with_history.pt
+best_model_no_history.pt
+model.pt 
+.gitignore
