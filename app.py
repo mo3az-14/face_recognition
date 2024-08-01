@@ -52,7 +52,7 @@ img1 = None
 img2 = None
 
 # load weights
-checkpoint = torch.load(r"test_model1.pt")
+checkpoint = torch.load(r"model.pt")
 
 # load model from checkpoint
 model = Model()
