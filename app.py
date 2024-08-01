@@ -10,9 +10,19 @@ import torchvision.transforms.v2 as transforms
 import torch
 
 
+# model inference
 def inference(img1: tensor, img2: tensor, threshold: float) -> int:
     return int(torch.sigmoid(model(img1, img2)) > threshold)
 
+
+st.sidebar.title("Sections")
+st.sidebar.markdown("[Where am I?](#WhereamI?)")
+st.sidebar.markdown("[Try it!](#Tryit!)")
+st.sidebar.markdown("[The project](#Theproject)")
+st.sidebar.markdown("[Some of the things that I liked](#SomeofthethingsthatIliked)")
+st.sidebar.markdown("[graphs](#graphs)")
+st.sidebar.markdown("[Bad results](#Badresults?)")
+st.sidebar.markdown("[Contact me](#Contactme)")
 
 # styles for the adding color to headings
 st.markdown(
@@ -41,12 +51,15 @@ st.markdown(
 img1 = None
 img2 = None
 
+# load weights
 checkpoint = torch.load(r"test_model1.pt")
 
+# load model from checkpoint
 model = Model()
 model.load_state_dict(checkpoint["model"])
 model.eval()
 
+# load training metrics
 accuracy = checkpoint["accuracy"]
 precision = checkpoint["precision"]
 epochs = checkpoint["epochs"]
@@ -71,11 +84,13 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Who am I section
-text1 = """<div class='subtitle'> Where am I?</div>
+# Where am I section
+text1 = """<div class='subtitle' id="WhereamI?" >Where am I? </div>
 If you are here that means you want to see my face recognition project, 
 yay! If not, how did you get here? This is my machine learning project where
-I try tackling face recognition task from scratch. 
+I try tackling face recognition task from scratch. This project is (or was depending on when are you reading this) a 2 parts project. 
+part 1 I replicate the Siamese Neural Networks for One-shot Image Recognition and figure out the architecture, dataloader, training etc...
+and in part 2 I try using a bigger more complex model to get better results on the dataset of my choice (LFW).
 
 **First**, why not try the project for yourself? 
 And don’t worry the data doesn’t get saved, even if I want to, I don’t know how…
@@ -83,7 +98,7 @@ And don’t worry the data doesn’t get saved, even if I want to, I don’t kno
 st.markdown(text1, unsafe_allow_html=True)
 
 # Try it section
-text2 = """<div class='subtitle'>Try it!</div>
+text2 = """<div class='subtitle' id="Tryit!">Try it!</div>
 
 Please upload an image of you. This will be used as the source image. 
 Please choose a good image and don't try to break it because it will break :sweat_smile:
@@ -132,16 +147,17 @@ if img1 is not None and img2 is not None:
     else:
         st.markdown("""this image **is not** the same as the ground truth :x:""")
 
+
 # The project section
-text3 = """<div class='subtitle'>The project</div>
+text3 = """<div class='subtitle' id="Theproject">The project</div>
 
 This project is an attempt to replicate 
 [Siamese Neural Networks for One-shot Image Recognition]\
 (https://www.cs.cmu.edu/~rsalakhu/papers/oneshot1.pdf "Siamese Neural Networks for One-shot Image Recognition") 
-paper with the twist of using the [lfw](https://www.kaggle.com/datasets/atulanandjha/lfwpeople "LFW from kaggle") dataset instead of the
-[omniglot](https://www.kaggle.com/datasets/qweenink/omniglot "omniglot from kaggle") dataset. The goal of the project is to match the
-faces of people (a very naive face recognition/lock for the phones).The main purpose of this project to me was **learning**.I learned a 
-lot about pytorch (90%), numpy (10%) and computer vision in general in this project. 
+paper with some changes like using the [lfw](https://www.kaggle.com/datasets/atulanandjha/lfwpeople "LFW from kaggle") dataset instead of the
+[omniglot](https://www.kaggle.com/datasets/qweenink/omniglot "omniglot from kaggle") dataset and using Adam optimizer instead of SGD (I tried it but adam converged faster ).
+The goal of the project is to match the faces of people (a very naive face recognition/lock for the phones).The main purpose of this 
+project to me was **learning**.I learned a lot about pytorch (90%), numpy (10%) and computer vision in general in this project. 
 My goal was to get my hands dirty with pytorch and try replicating a paper.
 
 Here is a list of stuff I used/tried in this project:
@@ -163,7 +179,7 @@ and much more.
 st.markdown(text3, unsafe_allow_html=True)
 
 # Some of the things I liked section
-text4 = """<div class='subtitle'>Some of the things that I liked :</div>
+text4 = """<div class='subtitle' id="SomeofthethingsthatIliked">Some of the things that I liked</div>
 
 <div class='subsub'> Mixed precision training and gradient scailing</div>
 
@@ -187,6 +203,9 @@ to learn?. Please send an email me if you have an explaination.
 
 """
 st.markdown(text4, unsafe_allow_html=True)
+
+graphs_text = """<div class='subtitle' id="graphs">Graphs</div>"""
+st.markdown(graphs_text, unsafe_allow_html=True)
 
 # charts
 # loss chart
@@ -307,16 +326,22 @@ fscore_fig_config = {
 fscore_fig.update_layout(fscore_fig_config)
 st.plotly_chart(fscore_fig, **{"config": fscore_fig_config})
 
-text5 = """<div class='subtitle'>bad results and goal of project?</div>
+text5 = """<div class='subtitle' id="Badresults?">Bad results?</div>
 
-Well the results aren't impressive and frankly we get only 80\%\ accuracy on test data which is nothing compared to the current state of 
-the art models which reach 99.80\%\ accuracy but the goal of the project was to try to  
+Well the results aren't impressive and frankly we get only 80\% accuracy on test data which is nothing compared to the current state of 
+the art models which reach 99.90\% accuracy but the goal of the project was to try to replicate a paper that I've never read before without 
+using or copying an already made implementation (I didn't use chatgpt becuase It will just spit out the answer). But I don't like the results
+so in part 2 I will try to increase the performance. I don't want to set any expectations but I hope that by the time you open this project
+again it will have been updated with better results at the end. 
+
+If for some reason you reached here **thank you** for reading and come check again in another week or two when the project get's updated
+with better results :heart:.
 
 """
-
 st.markdown(text5, unsafe_allow_html=True)
+
 # contact me section
-text6 = """<div class='subtitle'>contact me</div>
+text6 = """<div class='subtitle' id="Contactme">contact me</div>
 
 gmail : moaaz2tarik1@gmail.com
 
