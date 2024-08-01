@@ -36,7 +36,7 @@ python trainer.py -[Arguments]
 we can choose between
 
 - 2 optimizers Adam and SGD using `--adam` argument
-- 2 learning rate schedulers StepLr and CosineAnnealingLR
+- 2 learning rate schedulers StepLr and CosineAnnealingLR using `--cos` argument
 
 ### Arguments
 
