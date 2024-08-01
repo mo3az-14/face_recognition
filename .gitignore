@@ -10,5 +10,5 @@ fidging.ipynb
 best_model_with_history.pt
 best_model_no_history.pt
 test_model1.pt
-model.pt
+model.pt 
 .gitignore
