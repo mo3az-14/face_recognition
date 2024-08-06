@@ -8,6 +8,16 @@ The goal of the project is to match the faces of people (a very naive face recog
 project to me was **learning**.I learned a lot about pytorch (90%), numpy (10%) and computer vision in general in this project.
 My goal was to get my hands dirty with pytorch and try replicating a paper.
 
+## config
+
+you can modify `config.py` if you want to change:
+
+- dataset folder path (`DATASET`)
+- training data folder path (`TRAIN_DATASET`)
+- testing data folder path (`TEST_DATASET`)
+- percentage of training examples (`TRAIN_PRECENT`)
+- the path of the logs folder (`LOGS_PATH`)
+
 ## How to download the data
 
 1- go to kaggle and create an API token ([docs](https://www.kaggle.com/docs/api#getting-started-installation-&-authentication "kaggle docs"))
@@ -38,7 +48,7 @@ we can choose between
 - 2 optimizers Adam and SGD using `--adam` argument
 - 2 learning rate schedulers StepLr and CosineAnnealingLR using `--cos` argument
 
-### Arguments
+### Arguments 
 
 ```
 --epochs => No. of epochs for training. default 5

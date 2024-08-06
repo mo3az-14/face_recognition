@@ -1,11 +1,12 @@
-# path to training and testing data
+# dataset folder path
 DATASET = "dataset"
+# path to training and testing data
 TRAIN_DATASET = "dataset/train"
 TEST_DATASET = "dataset/test"
 
 TRAIN_PRECENT = 0.8
 
-# kaggle
+# kaggle api setyp
 KAGGLE_USERNAME = "your username"
 KAGGLE_KEY = "your token"
 
