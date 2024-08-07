@@ -117,7 +117,7 @@ uploaded_file1 = st.file_uploader(
 # if a file is uploaded apply transformations required and display it
 if uploaded_file1 is not None:
     ground_truth_image1 = Image.open(uploaded_file1)
-    img1 = data_transform(ground_truth_image1)
+    img1 = data_transform(ground_truth_image1.convert("RGB"))
     img1 = img1.unsqueeze(0)
     st.image(
         ground_truth_image1.resize(config.IMAGE_SIZE, Image.LANCZOS),
@@ -133,7 +133,7 @@ uploaded_file2 = st.file_uploader(
 
 if uploaded_file2 is not None:
     ground_truth_image2 = Image.open(uploaded_file2)
-    img2 = data_transform(ground_truth_image2)
+    img2 = data_transform(ground_truth_image2.convert("RGB"))
     img2 = img2.unsqueeze(0)
     st.image(
         ground_truth_image2.resize(config.IMAGE_SIZE, Image.LANCZOS),
