@@ -9,6 +9,8 @@ from torch import tensor
 import torchvision.transforms.v2 as transforms
 import torch
 
+local_checkpoint_path = "model.pt"
+
 
 # model inference
 def inference(img1: tensor, img2: tensor, threshold: float) -> int:

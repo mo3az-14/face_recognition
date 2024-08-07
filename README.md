@@ -1,5 +1,11 @@
 # Face recogntion by moaaz
 
+### See the [website](https://moaazsfacerecognition.streamlit.app/) for the results and graphs!
+
+This is a 2 parts project where part-1 (Done) is to implement the paper and data loader and part-2 is where I try to achieve better performance/accuracy using my own optimizations.
+
+## Introduction
+
 This project is an attempt to replicate
 [Siamese Neural Networks for One-shot Image Recognition](https://www.cs.cmu.edu/~rsalakhu/papers/oneshot1.pdf "Siamese Neural Networks for One-shot Image Recognition")
 paper with some changes like using the [lfw](https://www.kaggle.com/datasets/atulanandjha/lfwpeople "LFW from kaggle") dataset instead of the
@@ -45,10 +51,10 @@ python trainer.py -[Arguments]
 
 we can choose between
 
-- 2 optimizers Adam and SGD using `--adam` argument
-- 2 learning rate schedulers StepLr and CosineAnnealingLR using `--cos` argument
+- 2 optimizers Adam and SGD using `--adam` argument (default adam)
+- 2 learning rate schedulers StepLr and CosineAnnealingLR using `--cos` argument (default cos)
 
-### Arguments 
+### Arguments
 
 ```
 --epochs => No. of epochs for training. default 5
