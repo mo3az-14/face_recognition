@@ -10,7 +10,7 @@ from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR
 import config
 from data_loaders import Pair_Data_Loader
-from model import Model
+from model import original_siamese, resnext_50
 import my_logger as log
 from arguments import get_arguments
 from helper_functions import train_loop, initialize_weights
@@ -31,6 +31,7 @@ if __name__ == "__main__":
     batch_size = args.batch_size
     patience = args.patience
     epochs = args.epochs
+    siamese = args.siamese
     num_workers = args.num_workers
     calc_metrics_interval = args.calc_metrics_interval
     slice_of_data = args.slice_of_data
@@ -41,8 +42,10 @@ if __name__ == "__main__":
     rng = np.random.default_rng()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-
-    model = Model().to(device)
+    if siamese:
+        model = original_siamese().to(device)
+    else:
+        model = resnext_50().to(device)
 
     optimizer = (
         Adam(params=model.parameters(), lr=lr, weight_decay=weight_decay)

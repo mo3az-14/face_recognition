@@ -90,5 +90,12 @@ def get_arguments():
         help="p for data augmentation",
     )
     parser.add_argument("--adam", type=int, default=1, help="1 -> adam , 0-> SGD")
+    parser.add_argument(
+        "--siamese",
+        type=int,
+        default=1,
+        help="choose between the original siamese neural network or resnext as a backbone siamese. default 1-> siamese",
+    )
     args = parser.parse_args()
+
     return args
