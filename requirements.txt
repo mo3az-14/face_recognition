@@ -1,8 +1,10 @@
 numpy
-torch
-torchvision
 scikit-learn
+streamlit
 tqdm
 pillow
 kaggle
 plotly
+--find-links https://download.pytorch.org/whl/cu124
+torch 
+torchvision
