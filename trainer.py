@@ -41,24 +41,39 @@ if __name__ == "__main__":
 
     rng = np.random.default_rng()
 
+    # device agnostic
     device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    # model
     if siamese:
+        print("using the normal siamese network...")
         model = original_siamese().to(device)
     else:
+        print("using the resnext as backbone...")
         model = resnext_50().to(device)
 
-    optimizer = (
-        Adam(params=model.parameters(), lr=lr, weight_decay=weight_decay)
-        if adam
-        else SGD(params=model.parameters(), lr=lr, weight_decay=weight_decay)
-    )
+    # weights intialization
+    if init == 1:
+        print(
+            "model weights intialization is enabled. intializing weights using xavier normal...."
+        )
+        model.apply(initialize_weights)
+
+    if adam:
+        print("using Adam optimizer...")
+        optimizer = Adam(params=model.parameters(), lr=lr, weight_decay=weight_decay)
+    else:
+        print("using SGD optimizer...")
+        optimizer = SGD(params=model.parameters(), lr=lr, weight_decay=weight_decay)
 
     # learning rate scheduler
     scheduler = None
     if lr_scheduler_on:
         if cos:
+            print("using CosineAnnealingLR learning rate scheduler...")
             CosineAnnealingLR(optimizer, T_max=50)
         else:
+            print("using StepLR learning rate scheduler...")
             StepLR(optimizer, step_size=step_size, gamma=gamma)
 
     # transformations
@@ -104,10 +119,6 @@ if __name__ == "__main__":
     )
 
     loss_function = nn.BCEWithLogitsLoss(reduction="mean")
-
-    # weights intialization
-    if init == 1:
-        model.apply(initialize_weights)
 
     # training
     train_loss, test_loss, train_metrics, test_metrics, models = train_loop(

@@ -1,7 +1,6 @@
 numpy
 torch
 torchvision
-torchaudio
 scikit-learn
 tqdm
 pillow
