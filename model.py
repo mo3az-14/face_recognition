@@ -23,7 +23,7 @@ class original_siamese(nn.Module):
             nn.Conv2d(128, 256, 4),
             nn.ReLU(),
         )
-        self.linear = nn.Sequential(nn.Linear(256 * 8 * 8, 4096), nn.Sigmoid())
+        self.linear = nn.Sequential(nn.Linear(135424, 4096), nn.Sigmoid())
         self.out = nn.Linear(4096, 1)
 
     def forward_one(self, x):

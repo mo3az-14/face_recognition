@@ -16,19 +16,19 @@ def split_data(src_data_directory: str, ratio: float = config.TRAIN_PRECENT):
     try:
         os.mkdir(config.TRAIN_DATASET)
         os.mkdir(config.TEST_DATASET)
-    except:
+    except Exception:
         print("couldn't create train test directories or they already exists")
 
     try:
         for i in random_idxs[: int(len(random_idxs) * ratio)]:
             shutil.move(src_data_directory + "/" + names[i], config.TRAIN_DATASET)
-    except:
+    except Exception:
         print("train dataset is already split")
 
     try:
         for i in random_idxs[int(len(random_idxs) * ratio) :]:
             shutil.move(src_data_directory + "/" + names[i], config.TEST_DATASET)
-    except:
+    except Exception:
         print("test dataset is already split")
 
     print(

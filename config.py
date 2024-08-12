@@ -11,7 +11,7 @@ KAGGLE_USERNAME = "your username"
 KAGGLE_KEY = "your token"
 
 # model input image size
-IMAGE_SIZE = (128, 128)
+IMAGE_SIZE = (244, 244)
 
 # define the path to save the model
 LOGS_PATH = "logs/"

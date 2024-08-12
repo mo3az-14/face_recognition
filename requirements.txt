@@ -5,6 +5,6 @@ tqdm
 pillow
 kaggle
 plotly
---find-links https://download.pytorch.org/whl/cu124
-torch 
-torchvision
+facenet_pytorch
+torch  -f https://download.pytorch.org/whl/cu124
+torchvision -f https://download.pytorch.org/whl/cu124

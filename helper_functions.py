@@ -1,5 +1,4 @@
 import torch
-import torch.cuda.amp as amp
 import tqdm
 from sklearn.metrics import precision_recall_fscore_support
 import numpy as np
@@ -46,8 +45,9 @@ def train_step(
             second.to(device, non_blocking=True),
             target.to(device, non_blocking=True),
         )
+        print(first.shape)
         if mixed_precision_on:
-            with amp.autocast():
+            with torch.autocast(device):
                 output = model(first, second).squeeze()
                 loss = loss_fn(output, target)
 
@@ -96,7 +96,7 @@ def valid_step(
             )
             if mixed_precision_on:
                 # saves memory
-                with amp.autocast():
+                with torch.autocast(device):
                     output = model(first, second).squeeze()
                     loss = loss_fn(output, target)
 
@@ -132,7 +132,7 @@ def train_loop(
     test_loss_acc = []
     scaler = None
     if mixed_precision_on:
-        scaler = amp.GradScaler()
+        scaler = torch.amp.GradScaler("cuda")
 
     best_loss = float("inf")
     epochs_without_imporvement = 0
