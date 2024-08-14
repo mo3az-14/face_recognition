@@ -13,6 +13,15 @@ try:
     os.mkdir(r"cropped_dataset")
 except Exception:
     print("cropped_dataset directory already exists")
+try:
+    os.mkdir(r"cropped_dataset/train")
+except Exception:
+    print("cropped_dataset/train directory already exists")
+try:
+    os.mkdir(r"cropped_dataset/test")
+except Exception:
+    print("cropped_dataset/test directory already exists")
+
 
 # %%
 mtcnn = MTCNN(image_size=244, margin=10, device="cuda", post_process=False)

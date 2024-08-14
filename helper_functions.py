@@ -4,6 +4,7 @@ from sklearn.metrics import precision_recall_fscore_support
 import numpy as np
 from copy import deepcopy
 import torch.nn as nn
+import torch.cuda.amp as amp
 
 
 def get_metrics(
@@ -132,7 +133,7 @@ def train_loop(
     test_loss_acc = []
     scaler = None
     if mixed_precision_on:
-        scaler = torch.amp.GradScaler("cuda")
+        scaler = amp.GradScaler("cuda")
 
     best_loss = float("inf")
     epochs_without_imporvement = 0
