@@ -51,6 +51,7 @@ if __name__ == "__main__":
     else:
         print("using the resnext as backbone...")
         model = resnext_50().to(device)
+        model = torch.compile(model)
 
     # weights intialization
     if init == 1:

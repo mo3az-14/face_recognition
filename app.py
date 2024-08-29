@@ -1,29 +1,104 @@
 import streamlit as st
 from PIL import Image
-import config
-from model import Model
+from model import resnext_50, original_siamese
 from torch import nn
 import plotly.graph_objects as go
 import numpy as np
 from torch import tensor
 import torchvision.transforms.v2 as transforms
 import torch
+from facenet_pytorch import MTCNN
 
-local_checkpoint_path = "model.pt"
+st.set_page_config(layout="wide")
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+mtcnn = MTCNN(image_size=244, post_process=True, margin=10)
+
+base_check_point = r"model.pt"
+improved_check_point = r"model2.pt"
 
 
 # model inference
-def inference(img1: tensor, img2: tensor, threshold: float) -> int:
-    return int(torch.sigmoid(model(img1, img2)) > threshold)
+def inference(img1: tensor, img2: tensor, threshold: float, model: nn.Module) -> int:
+    return int(
+        torch.sigmoid(model(img1.to(device).unsqueeze(0), img2.to(device).unsqueeze(0)))
+        > threshold
+    )
 
+
+img1 = None
+img2 = None
+img3 = None
+img4 = None
+
+# load weights
+checkpoint = torch.load(base_check_point)
+checkpoint2 = torch.load(improved_check_point)
+
+# load model from checkpoint
+base_model = original_siamese()
+base_model.load_state_dict(checkpoint["model"])
+base_model.to(device=device)
+base_model.eval()
+
+improved_model = resnext_50()
+improved_model.load_state_dict(checkpoint2["model"]["best_accuracy_model"])
+improved_model.to(device=device)
+improved_model.eval()
+
+# load training metrics
+accuracy = checkpoint["accuracy"]
+precision = checkpoint["precision"]
+epochs = checkpoint["epochs"]
+recall = checkpoint["recall"]
+fscore = checkpoint["fscore"]
+train_loss, test_loss = checkpoint["train_loss"], checkpoint["test_loss"]
+
+# improved model accuracy
+improved_test_accuracy = checkpoint2["test_accuracy"]
+improved_test_precision = checkpoint2["test_precision"]
+improved_test_recall = checkpoint2["test_recall"]
+improved_test_fscore = checkpoint2["test_fscore"]
+improved_train_accuracy = checkpoint2["train_accuracy"]
+improved_train_precision = checkpoint2["train_precision"]
+improved_train_recall = checkpoint2["train_recall"]
+improved_train_fscore = checkpoint2["train_fscore"]
+improved_train_loss, improved_test_loss = (
+    checkpoint2["train_loss"],
+    checkpoint2["test_loss"],
+)
+improved_epochs = checkpoint2["epochs"]
+
+# transformations
+data_transform1 = nn.Sequential(
+    transforms.ToImage(),
+    transforms.ToDtype(
+        torch.float32,
+        scale=True,
+    ),
+    transforms.Resize(size=(128, 128)),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+)
+data_transform2 = nn.Sequential(
+    transforms.ToImage(),
+    transforms.ToDtype(
+        torch.float32,
+        scale=True,
+    ),
+)
 
 st.sidebar.title("Sections")
+st.sidebar.markdown("Part 1")
 st.sidebar.markdown("[Where am I?](#WhereamI?)")
 st.sidebar.markdown("[Try it!](#Tryit!)")
 st.sidebar.markdown("[The project](#Theproject)")
 st.sidebar.markdown("[Some of the things that I liked](#SomeofthethingsthatIliked)")
 st.sidebar.markdown("[graphs](#graphs)")
 st.sidebar.markdown("[Bad results](#Badresults?)")
+st.sidebar.markdown("part 2")
+st.sidebar.markdown("[part 2](#part2)")
+st.sidebar.markdown("[graphs](#graphs2)")
+st.sidebar.markdown("[Try it!](#Tryit1!)")
 st.sidebar.markdown("[Contact me](#Contactme)")
 
 # styles for the adding color to headings
@@ -48,36 +123,6 @@ st.markdown(
     </style>
 """,
     unsafe_allow_html=True,
-)
-
-img1 = None
-img2 = None
-
-# load weights
-checkpoint = torch.load(r"model.pt")
-
-# load model from checkpoint
-model = Model()
-model.load_state_dict(checkpoint["model"])
-model.eval()
-
-# load training metrics
-accuracy = checkpoint["accuracy"]
-precision = checkpoint["precision"]
-epochs = checkpoint["epochs"]
-recall = checkpoint["recall"]
-fscore = checkpoint["fscore"]
-train_loss, test_loss = checkpoint["train_loss"], checkpoint["test_loss"]
-
-# transformations
-data_transform = nn.Sequential(
-    transforms.ToImage(),
-    transforms.ToDtype(
-        torch.float32,
-        scale=True,
-    ),
-    transforms.Resize(size=config.IMAGE_SIZE),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 )
 
 # Title of the page
@@ -117,15 +162,14 @@ uploaded_file1 = st.file_uploader(
 # if a file is uploaded apply transformations required and display it
 if uploaded_file1 is not None:
     ground_truth_image1 = Image.open(uploaded_file1)
-    img1 = data_transform(ground_truth_image1.convert("RGB"))
-    img1 = img1.unsqueeze(0)
+    img1 = data_transform1(ground_truth_image1.convert("RGB"))
     st.image(
-        ground_truth_image1.resize(config.IMAGE_SIZE, Image.LANCZOS),
+        ground_truth_image1.resize((128, 128), Image.LANCZOS),
         caption="image resized to the actual input dimensions",
     )
 
-text2 = """now you can test with any other image of you or your friend."""
-st.markdown(text2)
+text3 = """now you can test with any other image of you or your friend."""
+st.markdown(text3)
 
 uploaded_file2 = st.file_uploader(
     label="upload an image to test on", type=["png", "jpeg", "jpg"], key="img1"
@@ -133,15 +177,14 @@ uploaded_file2 = st.file_uploader(
 
 if uploaded_file2 is not None:
     ground_truth_image2 = Image.open(uploaded_file2)
-    img2 = data_transform(ground_truth_image2.convert("RGB"))
-    img2 = img2.unsqueeze(0)
+    img2 = data_transform1(ground_truth_image2.convert("RGB"))
     st.image(
-        ground_truth_image2.resize(config.IMAGE_SIZE, Image.LANCZOS),
+        ground_truth_image2.resize((128, 128), Image.LANCZOS),
         caption="image resized to the actual input dimensions",
     )
 
 if img1 is not None and img2 is not None:
-    result = inference(img1, img2, 0.5)
+    result = inference(img1, img2, 0.5, base_model)
     if result == 1:
         st.markdown(
             """this image **is** the same as the ground truth :white_check_mark:"""
@@ -151,7 +194,7 @@ if img1 is not None and img2 is not None:
 
 
 # The project section
-text3 = """<div class='subtitle' id="Theproject">The project</div>
+text4 = """<div class='subtitle' id="Theproject">The project</div>
 
 This project is an attempt to replicate 
 [Siamese Neural Networks for One-shot Image Recognition]\
@@ -178,10 +221,10 @@ Here is a list of stuff I used/tried in this project:
 
 and much more.
 """
-st.markdown(text3, unsafe_allow_html=True)
+st.markdown(text4, unsafe_allow_html=True)
 
 # Some of the things I liked section
-text4 = """<div class='subtitle' id="SomeofthethingsthatIliked">Some of the things that I liked</div>
+text5 = """<div class='subtitle' id="SomeofthethingsthatIliked">Some of the things that I liked</div>
 
 <div class='subsub'> Mixed precision training and gradient scailing</div>
 
@@ -204,10 +247,9 @@ Well this is a bit of weird one, I tried using xavier normal & uniform intializa
 to learn?. Please send an email me if you have an explaination. 
 
 """
-st.markdown(text4, unsafe_allow_html=True)
-
-graphs_text = """<div class='subtitle' id="graphs">Graphs</div>"""
-st.markdown(graphs_text, unsafe_allow_html=True)
+st.markdown(text5, unsafe_allow_html=True)
+text8 = """<div class='subtitle' id="graphs">Graphs</div>"""
+st.markdown(text8, unsafe_allow_html=True)
 
 # charts
 # loss chart
@@ -233,7 +275,7 @@ loss_fig.add_trace(
 loss_fig_config = {
     "title": {"text": "training vs test loss"},
     "xaxis": {"showgrid": False},
-    "yaxis": {"showgrid": False},
+    "yaxis": {"range": [0, max(train_loss, test_loss)]},
 }
 loss_fig.update_layout(loss_fig_config)
 st.plotly_chart(loss_fig)
@@ -255,7 +297,7 @@ accuracy_fig_config = {
         "font": {"color": "rgb(184, 184, 184)"},
     },
     "xaxis": {"showgrid": False},
-    "yaxis": {"showgrid": False},
+    "yaxis": {"showgrid": True, "range": [0, 1]},
 }
 accuracy_fig.update_layout(accuracy_fig_config)
 st.plotly_chart(accuracy_fig)
@@ -277,7 +319,7 @@ precision_fig_config = {
         "font": {"color": "rgb(184, 184, 184)"},
     },
     "xaxis": {"showgrid": False},
-    "yaxis": {"showgrid": False},
+    "yaxis": {"showgrid": True, "range": [0, 1]},
 }
 precision_fig.update_layout(precision_fig_config)
 st.plotly_chart(precision_fig)
@@ -299,7 +341,7 @@ recall_fig_config = {
         "font": {"color": "rgb(184, 184, 184)"},
     },
     "xaxis": {"showgrid": False},
-    "yaxis": {"showgrid": False},
+    "yaxis": {"showgrid": True, "range": [0, 1]},
 }
 recall_fig.update_layout(recall_fig_config)
 st.plotly_chart(recall_fig)
@@ -321,14 +363,12 @@ fscore_fig_config = {
         "font": {"color": "rgb(184, 184, 184)"},
     },
     "xaxis": {"showgrid": False},
-    "yaxis": {
-        "showgrid": False,
-    },
+    "yaxis": {"showgrid": True, "range": [0, 1]},
 }
 fscore_fig.update_layout(fscore_fig_config)
 st.plotly_chart(fscore_fig, **{"config": fscore_fig_config})
 
-text5 = """<div class='subtitle' id="Badresults?">Bad results?</div>
+text6 = """<div class='subtitle' id="Badresults?">Bad results?</div>
 
 Well the results aren't impressive and frankly we get only 80\% accuracy on test data which is nothing compared to the current state of 
 the art models which reach 99.90\% accuracy but the goal of the project was to try to replicate a paper that I've never read before without 
@@ -340,10 +380,244 @@ If for some reason you reached here **thank you** for reading and come check aga
 with better results :heart:.
 
 """
-st.markdown(text5, unsafe_allow_html=True)
+
+st.markdown(text6, unsafe_allow_html=True)
+text7 = """<div class='subtitle' id="part2">Part 2</div>
+
+I tried several things to improve performance.
+
+1- More data augmentation: because there was a clear overfitting problem 
+
+2- more regularization by adding dropout layers 
+
+3- better backbone: I fine-tuned pretrained resnext50_32x4d model (default weights from pytorch) which did indeed improve the performance
+and require way less training (100->50 epochs)
+
+4- longer training: I tried training for 50,100,150,200 epochs and anything above 40 epochs wouldn't improve the
+performance  
+
+*Still* we have an overfitting problem. Solutions? 
+
+1- More regularization: I increased the weight decay but anything above 0.0001 the model wouldn't converge
+
+2- Smaller model: 
+
+The way I fine-tuned the model is by removing the last fully connected layer and adding a small
+Linear layer (embedding) right before the final classifier that will decide if the 2 images are similar or not. 
+The plan was to make it so the we can compute the embeddings with the embedding layer and store it somewhere (database), then during
+inference we would only use the last small linear classifier to pick the matching picture.  
+
+"""
+st.markdown(text7, unsafe_allow_html=True)
+
+text8 = """<div class='subtitle' id="graphs2">Graphs</div>"""
+st.markdown(text8, unsafe_allow_html=True)
+
+# charts
+# loss chart
+loss_fig = go.Figure()
+loss_fig.add_trace(
+    go.Scatter(
+        name="train_loss",
+        x=np.arange(1, improved_epochs + 1),
+        y=improved_train_loss,
+        mode="lines",
+        marker={"color": "rgb(72, 169, 166)"},
+    )
+)
+loss_fig.add_trace(
+    go.Scatter(
+        name="test_loss",
+        x=np.arange(1, improved_epochs + 1),
+        y=improved_test_loss,
+        mode="lines",
+        marker={"color": "rgb(161, 195, 73)"},
+    )
+)
+loss_fig_config = {
+    "title": {"text": "training loss vs test loss"},
+    "xaxis": {"showgrid": False},
+    "yaxis": {
+        "showgrid": True,
+        "range": [0, max(improved_test_loss, improved_train_accuracy)],
+    },
+}
+loss_fig.update_layout(loss_fig_config)
+st.plotly_chart(loss_fig)
+
+# accuracy chart
+accuracy_fig = go.Figure()
+accuracy_fig.add_trace(
+    go.Scatter(
+        name="train accuracy",
+        x=np.arange(1, improved_epochs + 1),
+        y=improved_train_accuracy,
+        mode="lines",
+        marker={"color": "rgb(72, 169, 166)"},
+    )
+)
+accuracy_fig.add_trace(
+    go.Scatter(
+        name="test accuracy",
+        x=np.arange(1, improved_epochs + 1),
+        y=improved_test_accuracy,
+        mode="lines",
+        marker={"color": "rgb(161, 195, 73)"},
+    )
+)
+accuracy_fig_config = {
+    "title": {"text": "accuracy "},
+    "xaxis_title": {
+        "font": {"color": "rgb(184, 184, 184)"},
+    },
+    "xaxis": {"showgrid": False},
+    "yaxis": {"showgrid": True, "range": [0, 1]},
+}
+accuracy_fig.update_layout(accuracy_fig_config)
+st.plotly_chart(accuracy_fig)
+
+# precision chart
+precision_fig = go.Figure()
+precision_fig.add_trace(
+    go.Scatter(
+        name="train precision",
+        x=np.arange(1, improved_epochs + 1),
+        y=np.array(improved_train_precision),
+        mode="lines",
+        marker={"color": "rgb(72, 169, 166)"},
+    )
+)
+precision_fig.add_trace(
+    go.Scatter(
+        name="test precision",
+        x=np.arange(1, improved_epochs + 1),
+        y=np.array(improved_test_precision),
+        mode="lines",
+        marker={"color": "rgb(161, 195, 73)"},
+    )
+)
+
+precision_fig_config = {
+    "title": {"text": "precision"},
+    "xaxis_title": {
+        "font": {"color": "rgb(184, 184, 184)"},
+    },
+    "xaxis": {"showgrid": False},
+    "yaxis": {"showgrid": True, "range": [0, 1]},
+}
+precision_fig.update_layout(precision_fig_config)
+st.plotly_chart(precision_fig)
+
+# recall chart
+recall_fig = go.Figure()
+recall_fig.add_trace(
+    go.Scatter(
+        name="train recall",
+        x=np.arange(1, improved_epochs + 1),
+        y=np.array(improved_train_recall),
+        mode="lines",
+        marker={"color": "rgb(72, 169, 166)"},
+    )
+)
+recall_fig.add_trace(
+    go.Scatter(
+        name="test recall",
+        x=np.arange(1, improved_epochs + 1),
+        y=np.array(improved_test_recall),
+        mode="lines",
+        marker={"color": "rgb(161, 195, 73)"},
+    )
+)
+recall_fig_config = {
+    "title": {"text": "recall"},
+    "xaxis_title": {
+        "font": {"color": "rgb(184, 184, 184)"},
+    },
+    "xaxis": {"showgrid": False},
+    "yaxis": {"showgrid": True, "range": [0, 1]},
+}
+recall_fig.update_layout(recall_fig_config)
+st.plotly_chart(recall_fig)
+
+# fscore chart
+fscore_fig = go.Figure()
+fscore_fig.add_trace(
+    go.Scatter(
+        name="train fscore",
+        x=np.arange(1, improved_epochs + 1),
+        y=np.array(improved_train_fscore),
+        mode="lines",
+        marker={"color": "rgb(72, 169, 166)"},
+    )
+)
+fscore_fig.add_trace(
+    go.Scatter(
+        name="test fscore",
+        x=np.arange(1, improved_epochs + 1),
+        y=np.array(improved_test_fscore),
+        mode="lines",
+        marker={"color": "rgb(161, 195, 73)"},
+    )
+)
+fscore_fig_config = {
+    "title": {"text": "fscore"},
+    "xaxis_title": {
+        "font": {"color": "rgb(184, 184, 184)"},
+    },
+    "xaxis": {"showgrid": False},
+    "yaxis": {"showgrid": True, "range": [0, 1]},
+}
+fscore_fig.update_layout(fscore_fig_config)
+st.plotly_chart(fscore_fig, **{"config": fscore_fig_config})
+
+text9 = """<div class='subtitle' id="Tryit1!">Try it!</div>
+
+Please upload an image of you. This will be used as the source image. 
+"""
+st.markdown(text9, unsafe_allow_html=True)
+
+# upload photos
+uploaded_file3 = st.file_uploader(
+    label="upload an image of your face to be used as the ground truth",
+    type=["png", "jpeg", "jpg"],
+    key="img3",
+)
+
+# if a file is uploaded apply transformations required and display it
+if uploaded_file3 is not None:
+    ground_truth_image3 = Image.open(uploaded_file3)
+    img3 = data_transform2(ground_truth_image3.convert("RGB").resize((244, 244)))
+    img3, prob = mtcnn(ground_truth_image3.convert("RGB"), return_prob=True)
+    st.image(
+        ground_truth_image3.resize((244, 244), Image.LANCZOS),
+        caption="image resized to the actual input dimensions",
+    )
+
+text10 = """now you can test with any other image of you or your friend."""
+st.markdown(text10)
+
+uploaded_file4 = st.file_uploader(
+    label="upload an image to test on", type=["png", "jpeg", "jpg"], key="img4"
+)
+
+if uploaded_file4 is not None:
+    ground_truth_image4 = Image.open(uploaded_file4).convert("RGB")
+    img4 = mtcnn(ground_truth_image4)
+    st.image(
+        ground_truth_image4.resize((244, 244), Image.LANCZOS),
+        caption="image resized to the actual input dimensions",
+    )
+if img3 is not None and img4 is not None:
+    result = inference(img3, img4, 0.5, improved_model)
+    if result == 1:
+        st.markdown(
+            """this image **is** the same as the ground truth :white_check_mark:"""
+        )
+    else:
+        st.markdown("""this image **is not** the same as the ground truth :x:""")
 
 # contact me section
-text6 = """<div class='subtitle' id="Contactme">contact me</div>
+text11 = """<div class='subtitle' id="Contactme">contact me</div>
 
 gmail : moaaz2tarik1@gmail.com
 
@@ -352,4 +626,4 @@ Linkedin: [https://www.linkedin.com/in/moaaz-tarek/](https://www.linkedin.com/in
 github: [https://github.com/mo3az-14](https://github.com/mo3az-14 "moaaz tarek")
 
 """
-st.markdown(text6, unsafe_allow_html=True)
+st.markdown(text11, unsafe_allow_html=True)

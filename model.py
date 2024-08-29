@@ -23,7 +23,7 @@ class original_siamese(nn.Module):
             nn.Conv2d(128, 256, 4),
             nn.ReLU(),
         )
-        self.linear = nn.Sequential(nn.Linear(135424, 4096), nn.Sigmoid())
+        self.linear = nn.Sequential(nn.Linear(8 * 8 * 256, 4096), nn.Sigmoid())
         self.out = nn.Linear(4096, 1)
 
     def forward_one(self, x):
@@ -45,11 +45,16 @@ class resnext_50(nn.Module):
         super(resnext_50, self).__init__()
         self.backbone = resnext50_32x4d(weights=ResNeXt50_32X4D_Weights.DEFAULT)
         input_dim = self.backbone.fc.in_features
-        for i in self.backbone.parameters():
-            i.requires_grad = False
         self.backbone.fc = nn.Identity()
         self.linear1 = nn.Sequential(nn.Linear(input_dim, 1024), nn.Sigmoid())
-        self.out = nn.Sequential(nn.Linear(1024, 512), nn.Linear(512, 1))
+        self.out = nn.Sequential(
+            nn.Linear(1024, 512),
+            nn.Sigmoid(),
+            nn.Dropout(0.8),
+            nn.Linear(512, 128),
+            nn.Sigmoid(),
+            nn.Linear(128, 1),
+        )
 
     def pre_forward(self, img):
         x = self.backbone(img)

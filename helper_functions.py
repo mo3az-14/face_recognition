@@ -133,7 +133,7 @@ def train_loop(
     test_loss_acc = []
     scaler = None
     if mixed_precision_on:
-        scaler = amp.GradScaler("cuda")
+        scaler = torch.GradScaler("cuda")
 
     best_loss = float("inf")
     epochs_without_imporvement = 0
