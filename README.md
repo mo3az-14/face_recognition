@@ -1,93 +1,79 @@
-# Face recogntion by moaaz
+# Face recognition by moaaz
 
-### See the [website](https://moaazsfacerecognition.streamlit.app/) for the results and graphs!
+I tried replicating siamese neural network paper on the LFW dataset. I tried making and training my own model from scratch and fine tuning resnext-50 32x4d model.
 
-This is a 2 parts project where part-1 (Done) is to implement the paper and data loader and part-2 is where I try to achieve better performance/accuracy using my own optimizations.
+**You can try the model and see the blog post [here](https://moaazsfacerecognition.streamlit.app/)**
 
-## Introduction
+## project findings
 
-This project is an attempt to replicate
-[Siamese Neural Networks for One-shot Image Recognition](https://www.cs.cmu.edu/~rsalakhu/papers/oneshot1.pdf "Siamese Neural Networks for One-shot Image Recognition")
-paper with some changes like using the [lfw](https://www.kaggle.com/datasets/atulanandjha/lfwpeople "LFW from kaggle") dataset instead of the
-[omniglot](https://www.kaggle.com/datasets/qweenink/omniglot "omniglot from kaggle") dataset and using Adam optimizer instead of SGD (I tried it but adam converged faster ).
-The goal of the project is to match the faces of people (a very naive face recognition/lock for the phones).The main purpose of this
-project to me was **learning**.I learned a lot about pytorch (90%), numpy (10%) and computer vision in general in this project.
-My goal was to get my hands dirty with pytorch and try replicating a paper.
+#### My model from scratch
 
-## config
+| things I tried         | results                                                                                                                     | conclusion                                        |
+| :--------------------- | :-------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------ |
+| More trainig           | increasing from 50 -> 100 -> 200 -> 500 all yielded the same result of 80% accuracy on test but and maximum of 90% on train | model is the problem its clearly under fitting    |
+| Increase weight decay  | model wouldn't converge for any weight decay values >0.0001                                                                 | our maximum regularization is 0.0001              |
+| Add Drop Out layers    | It would only slow down the trainig but wouldn't solve the overfitting issue                                                | Drop out is not really effective here             |
+| Increase learning rate | > 0.001 was too much and < 0.00001 was too slow                                                                             | our sweet spot is 0.0001                          |
+| Smaller model          | it solves the overfitting but we get only 70% accuracy                                                                      | smaller model is not the solution for overfitting |
+| Bigger model           | better training accuracy but still 80% test accuracy                                                                        | more parameters is not the solution               |
 
-you can modify `config.py` if you want to change:
+Conclusions: the architecture itself is the problem since we can't get over the overfitting problem or else we will underfit
 
-- dataset folder path (`DATASET`)
-- training data folder path (`TRAIN_DATASET`)
-- testing data folder path (`TEST_DATASET`)
-- percentage of training examples (`TRAIN_PRECENT`)
-- the path of the logs folder (`LOGS_PATH`)
+I decided to change my approach in several ways:
 
-## How to download the data
+- I cropped the faces from the photos and increased the dimensions of the inputs (I used to train on the raw photos of the people )
+- I decided to try a model that uses residual connections. I thought it be able to use the data better.
+- More aggressive data augmentation
+- setup different checkpoints for different metrics like accuracy, precision and recall.
 
-1- go to kaggle and create an API token ([docs](https://www.kaggle.com/docs/api#getting-started-installation-&-authentication "kaggle docs"))
+#### Fine tuning resnext 32x4d
 
-2- copy the token to the `config.py`
+I managed to reach 99.95% accuracy on training and 86% on test.
 
-```
-KAGGLE_USERNAME = "your username"
-KAGGLE_KEY = "your token"
-```
+**YES** there is an overfitting problem how did I tackle it ?
 
-3- run
+- Classifier layer size: I tried using smaller classifiers (one layer) at the end since we have an overfitting problem but it didn't really have an effect.
 
-```
-python download_data.py
-```
+- Different activation functions: Although I always default to ReLU **but** for some reason sigmoid gave me better results. I was hesitant to use sigmoid due to it's several problems like vanishing gradients, saturation and killing Gradients and slow convergence but I believe I didn't face these problems since I didn't use sigmoid a lot.
 
-## train the model
+- Fewer layers: The resnext-50 32x4d consists of 4 layers so I tried removing the layers one by one to see how it would affect the results. Removing layer 4 decreased training accuracy but didn't have that much effect on the test. However removing any more layers would significantly impact the performance it wouldn't even reach 80% on any metric.
 
-to train the model run
+- Increase Drop Out probabilities: it increased the test accuracy 82% -> 86% at 80% drop out. Anything larger than that the model wouldn't converge.
 
-```
-python trainer.py -[Arguments]
-```
+## How to setup the project
 
-we can choose between
+1- `pip install -r requirements.txt`
 
-- 2 optimizers Adam and SGD using `--adam` argument (default adam)
-- 2 learning rate schedulers StepLr and CosineAnnealingLR using `--cos` argument (default cos)
+2- run `download_data.py`
 
-### Arguments
+3- run `crop_dataset_to_faces.py`
 
-```
---epochs => No. of epochs for training. default 5
+4- you can run `trainer.py` for training on uncropped data or `trainer2.py` for cropped data
 
---batch_size => Batch size . default 128
+folders:
 
---num_workers => No. of CPU cores used in dataloaders. default 0
+dataset: the directory of original data
 
---lr => Learning rate. default 0.0001
+cropped_dataset: the directory of data after cropping
 
---lr_scheduler_on => Turn learning rate scheduler on or off. default: 1 (0 or 1)
+logs: this directory contains the model checkpoints
 
---gamma => Multiplicative factor of learning rate decay for StepLR. default 0.999
+## The end
 
---step_size => Period of learning rate decay for StepLR. default 1
+At the end we are still over fitting with 99% train accuracy and 86% test-accuracy. I believe a huge part of the reason of the overfitting problem is my sampling method used to create the dataset. Also I am using L1 distance to measure the distance between the 2 embeddings which is not really usefull in higher dimensions. Another thing is the use of binary cross entropy loss which is not as effective for modeling the difference between faces as something like triplet loss or ArcFace, I decided to stick with BCE since each one of those would require a lot of change in the code and BCE is what was used in the siamese paper.
 
---weight_decay => Weight decay (L2 penalty). default: 0.01
+I had many different ideas that I can try but this project's purpose was to learn and be comfortable with Pytorch and I spent waaayyyy too much time on this project.
 
---mixed_precision => use mixed precision training. default: 1 (0 or 1)
+You will find the training recipe in RECIPE.md
 
---patience => No. of epochs to wait if there is no improvement in the early stoping metric defaut: 0 (early stopping is off)
+## 🔗 Links
 
---calc_metrics_interval => Period to calculate performance metrics. default: 1
+gmail : [moaaz2tarik1@gmail.com](moaaz2tarik1@gmail.com)
 
---slice_of_data => train on a subset (slice) of data. default: None (test)
+LinkedIn : [moaaz tarek](https://www.linkedin.com/in/moaaz-tarek/)
 
---early_stopping_metric => which loss to use for early stopping "train" or "test".
+GitHub : [moaaz tarek](https://github.com/mo3az-14)
 
---init => use weight intialization. default 1
+Demo : [https://moaazsfacerecognition.streamlit.app/](https://moaazsfacerecognition.streamlit.app/)
 
---cos => use CosineAnnealingLR or StepLR. 1->CosineAnnealingLR and 0-> StepLR. default 1
-
---p => probalitiy for data augmentation. default 0.5
-
---adam => use Adam optimizer or SGD. 1->Adam and 0->SGD
-```
+Please reach out to me if you have any tips, courses or anything that can help me learn. thank you!
