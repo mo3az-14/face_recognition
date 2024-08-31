@@ -35,3 +35,4 @@
 - num_workers => 4
 - calc_metrics_interval => 1
 - slice_of_data => None
+- siamese => 0

@@ -2,7 +2,7 @@
 
 I tried replicating siamese neural network paper on the LFW dataset. I tried making and training my own model from scratch and fine tuning resnext-50 32x4d model.
 
-**You can try the model and see the blog post [here](https://moaazsfacerecognition.streamlit.app/)**
+**You can try the model and see the blog post and graphs [here](https://moaazsfacerecognition.streamlit.app/)**
 
 ## project findings
 
@@ -76,4 +76,4 @@ GitHub : [moaaz tarek](https://github.com/mo3az-14)
 
 Demo : [https://moaazsfacerecognition.streamlit.app/](https://moaazsfacerecognition.streamlit.app/)
 
-Please reach out to me if you have any tips, courses or anything that can help me learn. thank you!
+**Please reach out to me if you have any tips, courses or anything that can help me learn. thank you!**
