@@ -52,11 +52,11 @@ I managed to reach 99.95% accuracy on training and 86% on test.
 
 folders:
 
-dataset: the directory of original data
+`dataset`: the directory of original data
 
-cropped_dataset: the directory of data after cropping
+`cropped_dataset`: the directory of data after cropping
 
-logs: this directory contains the model checkpoints
+`logs`: this directory contains the model checkpoints
 
 ## The end
 
