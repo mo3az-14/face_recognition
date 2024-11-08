@@ -60,8 +60,8 @@ img3 = None
 img4 = None
 
 # load weights
-checkpoint = torch.load(base_check_point)
-checkpoint2 = torch.load(improved_check_point)
+checkpoint = torch.load(base_check_point, map_location =device)
+checkpoint2 = torch.load(improved_check_point, map_location =device)
 
 # load model from checkpoint
 base_model = original_siamese()
