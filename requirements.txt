@@ -4,6 +4,7 @@ streamlit
 tqdm
 pillow
 kaggle
+gdown
 plotly
 facenet_pytorch
 torch  -f https://download.pytorch.org/whl/cu124

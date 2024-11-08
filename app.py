@@ -8,14 +8,42 @@ from torch import tensor
 import torchvision.transforms.v2 as transforms
 import torch
 from facenet_pytorch import MTCNN
+import os
+from download_models import download_model
+
+
+@st.cache_resource
+def load_model(id, output_path):
+    """Load the model, downloading it if necessary."""
+    model_path = f"{output_path}"
+    if not os.path.exists(model_path):
+        download_model(id, output_path)
+        st.success(f"{output_path} model downloaded successfully!")
+    return model_path
+
+
+first_model = r"1jTPE_9-AzYMww1BTSTdI7Z64qpSeysoV"
+second_model = r"1tSyPKY77sZX5HBkj8-LGdTYbZ_Fi3N11"
 
 st.set_page_config(layout="wide")
 
+
+global base_check_point, improved_check_point
+if not os.path.exists("model.pt"):
+    st.write("downloading model")
+    base_check_point = load_model(first_model, "model.pt")
+else:
+    base_check_point = load_model(first_model, "model.pt")
+
+if not os.path.exists("model2.pt"):
+    st.write("downloading model")
+    improved_check_point = load_model(second_model, "model2.pt")
+else:
+    improved_check_point = load_model(second_model, "model2.pt")
+
+
 device = "cuda" if torch.cuda.is_available() else "cpu"
 mtcnn = MTCNN(image_size=244, post_process=True, margin=10)
-
-base_check_point = r"model.pt"
-improved_check_point = r"model2.pt"
 
 
 # model inference
@@ -192,7 +220,6 @@ if img1 is not None and img2 is not None:
     else:
         st.markdown("""this image **is not** the same as the ground truth :x:""")
 
-
 # The project section
 text4 = """<div class='subtitle' id="Theproject">The project</div>
 
@@ -229,7 +256,7 @@ text5 = """<div class='subtitle' id="SomeofthethingsthatIliked">Some of the thin
 <div class='subsub'> Mixed precision training and gradient scailing</div>
 
 According to pytorch's tutorial mixed precision can save memory and offer great speed ups (2~3x). For the 
-speed up, It did really speed up the training time on my friend's machine by 60\%. As for the memory, it managed to save us ~30\%
+speed up, It did really speed up the training time on my friend's machine by 60%. As for the memory, it managed to save us ~30%
 or 512mb of vram which allowed us to run more experiments at the same time. I was worried about the whole effect on performance thing
 but it turned out to be negligble in my case.
 
@@ -370,8 +397,8 @@ st.plotly_chart(fscore_fig, **{"config": fscore_fig_config})
 
 text6 = """<div class='subtitle' id="Badresults?">Bad results?</div>
 
-Well the results aren't impressive and frankly we get only 80\% accuracy on test data which is nothing compared to the current state of 
-the art models which reach 99.90\% accuracy but the goal of the project was to try to replicate a paper that I've never read before without 
+Well the results aren't impressive and frankly we get only 80% accuracy on test data which is nothing compared to the current state of 
+the art models which reach 99.90% accuracy but the goal of the project was to try to replicate a paper that I've never read before without 
 using or copying an already made implementation (I didn't use chatgpt becuase It will just spit out the answer). But I don't like the results
 so in part 2 I will try to increase the performance. I don't want to set any expectations but I hope that by the time you open this project
 again it will have been updated with better results at the end. 
